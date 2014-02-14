@@ -1,9 +1,16 @@
-/target
-
 # Java
 *.class
 
+# Maven
+/target
+
 # Eclipse
+.classpath
+.project
 .settings
 .metadata
 bin
+
+# IntelliJ
+.idea
+*.iml
