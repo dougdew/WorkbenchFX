@@ -31,3 +31,8 @@ Assuming that you named the enterprise jar "enterprise.jar" and the metadata jar
 $ mvn install:install-file -Dfile=enterprise.jar -DgroupId=com.force.api -DartifactId=force-enterprise-api -Dversion=31.0.0 -Dpackaging=jar
 
 $ mvn install:install-file -Dfile=metadata.jar -DgroupId=com.force.api -DartifactId=force-metadata-api -Dversion=31.0.0 -Dpackaging=jar 
+
+
+The drop down list for selecting a server is intentionally blank. For now, it is up to you to add entries to that list. You can add entries to that list by adding code to LoginController.java.
+
+The drop down list for api version shows many versions, but for now, it is only meaningful to select version 31.0.
