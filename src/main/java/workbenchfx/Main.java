@@ -5,11 +5,10 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.SplitPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
@@ -17,16 +16,19 @@ import com.sforce.soap.enterprise.EnterpriseConnection;
 import com.sforce.soap.enterprise.GetUserInfoResult;
 import com.sforce.soap.metadata.MetadataConnection;
 
+import workbenchfx.perspective.PerspectiveController;
+
 public class Main extends Application {
 	
 	private static final String TITLE = "WorkbenchFX";
 	private static final String CSS_FILE = "application.css";
 	private static final String METADATA_NAMESPACE = "http://soap.sforce.com/2006/04/metadata";
 	
+	private AnchorPane root;
+	private Node perspectiveRoot;
+	
 	private LoginController loginController;
-	private DescribeAndListController describeAndListController;
-	private PropertiesController propertiesController;
-	private EditorController editorController;
+	private PerspectiveController perspectiveController;
 	private LogController logController;
 	
 	private ObjectProperty<EnterpriseConnection> enterpriseConnectionProperty = new SimpleObjectProperty<>();
@@ -61,16 +63,12 @@ public class Main extends Application {
 		}
 	}
 	
-	public DescribeAndListController getDescribeAndListController() {
-		return describeAndListController;
+	public LoginController getLoginController() {
+		return loginController;
 	}
 	
-	public PropertiesController getPropertiesController() {
-		return propertiesController;
-	}
-	
-	public EditorController getEditorController() {
-		return editorController;
+	public PerspectiveController getPerspectiveController() {
+		return perspectiveController;
 	}
 	
 	public LogController getLogController() {
@@ -95,89 +93,46 @@ public class Main extends Application {
 	
 	private Scene createScene() {
 		
-		AnchorPane root = new AnchorPane();
+		logController = new LogController(this);
+		
+		root = new AnchorPane();
 		Scene scene = new Scene(root, 1200, 800, Color.WHITE);
 		scene.getStylesheets().add(getClass().getResource(CSS_FILE).toExternalForm());
 		
-		// BEGIN LOGIN PANE
-		LoginController loginController = new LoginController(this);
+		// Toolbar pane
+		HBox toolBarBox = new HBox();
+		AnchorPane.setTopAnchor(toolBarBox, 0.0);
+		AnchorPane.setLeftAnchor(toolBarBox, 0.0);
+		root.getChildren().add(toolBarBox);
+		
+		// Login toolbar
+		loginController = new LoginController(this);
 		Node loginGraphRoot = loginController.getRoot();
-		AnchorPane.setTopAnchor(loginGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(loginGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(loginGraphRoot, 0.0);
-		root.getChildren().add(loginGraphRoot);
+		toolBarBox.getChildren().add(loginGraphRoot);
 		
-		// BEGIN MAIN SPLIT PANE
-		SplitPane mainSplitPane = new SplitPane();
-		mainSplitPane.setDividerPosition(0, 0.35);
-		AnchorPane.setTopAnchor(mainSplitPane, 37.0);
-		AnchorPane.setBottomAnchor(mainSplitPane, 0.0);
-		AnchorPane.setLeftAnchor(mainSplitPane, 0.0);
-		AnchorPane.setRightAnchor(mainSplitPane, 0.0);
-		root.getChildren().add(mainSplitPane);
-		AnchorPane mainLeftPane = new AnchorPane();
-		AnchorPane mainRightPane = new AnchorPane();
-		mainSplitPane.getItems().addAll(mainLeftPane, mainRightPane);
-		
-		// BEGIN LEFT SPLIT PANE
-		SplitPane leftSplitPane = new SplitPane();
-		leftSplitPane.setOrientation(Orientation.VERTICAL);
-		AnchorPane.setTopAnchor(leftSplitPane, 0.0);
-		AnchorPane.setBottomAnchor(leftSplitPane, 0.0);
-		AnchorPane.setLeftAnchor(leftSplitPane, 0.0);
-		AnchorPane.setRightAnchor(leftSplitPane, 0.0);
-		mainLeftPane.getChildren().add(leftSplitPane);
-		
-		// BEGIN DESCRIBE AND LIST PANE
-		describeAndListController = new DescribeAndListController(this);
-		Node describeAndListGraphRoot = describeAndListController.getRoot();
-		AnchorPane.setTopAnchor(describeAndListGraphRoot, 0.0);
-		AnchorPane.setBottomAnchor(describeAndListGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(describeAndListGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(describeAndListGraphRoot, 0.0);
-		leftSplitPane.getItems().add(describeAndListGraphRoot);
-		
-		// BEGIN PROPERIES PANE
-		propertiesController = new PropertiesController(this);
-		Node propertiesGraphRoot = propertiesController.getRoot();
-		AnchorPane.setTopAnchor(propertiesGraphRoot, 0.0);
-		AnchorPane.setBottomAnchor(propertiesGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(propertiesGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(propertiesGraphRoot, 0.0);
-		leftSplitPane.getItems().add(propertiesGraphRoot);
-		
-		// BEGIN RIGHT SPLIT PANE
-		SplitPane rightSplitPane = new SplitPane();
-		rightSplitPane.setOrientation(Orientation.VERTICAL);
-		rightSplitPane.setDividerPosition(0, 0.6);
-		AnchorPane.setTopAnchor(rightSplitPane, 0.0);
-		AnchorPane.setBottomAnchor(rightSplitPane, 0.0);
-		AnchorPane.setLeftAnchor(rightSplitPane, 0.0);
-		AnchorPane.setRightAnchor(rightSplitPane, 0.0);
-		mainRightPane.getChildren().add(rightSplitPane);
-		AnchorPane editorPane = new AnchorPane();
-		AnchorPane logPane = new AnchorPane();
-		rightSplitPane.getItems().addAll(editorPane, logPane);
-		
-		
-		// BEGIN EDITOR PANE
-		editorController = new EditorController(this);
-		Node editorGraphRoot = editorController.getRoot();
-		AnchorPane.setTopAnchor(editorGraphRoot, 0.0);
-		AnchorPane.setBottomAnchor(editorGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(editorGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(editorGraphRoot, 0.0);
-		editorPane.getChildren().add(editorGraphRoot);
-		
-		// BEGIN LOG PANE
-		logController = new LogController(this);
-		Node logGraphRoot = logController.getRoot();
-		AnchorPane.setTopAnchor(logGraphRoot, 0.0);
-		AnchorPane.setBottomAnchor(logGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(logGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(logGraphRoot, 0.0);
-		logPane.getChildren().add(logGraphRoot);
+		// Perspective toolbar
+		perspectiveController = new PerspectiveController(this);
+		Node perspectiveToolBarRoot = perspectiveController.getToolBarRoot();
+		scene.getStylesheets().add(PerspectiveController.class.getResource(PerspectiveController.getCSSFileName()).toExternalForm());
+		handlePerspectiveChanged();
+		perspectiveController.activePerspective().addListener(e -> handlePerspectiveChanged());
+		toolBarBox.getChildren().add(perspectiveToolBarRoot);
 		
 		return scene;
+	}
+	
+	private void handlePerspectiveChanged() {
+		
+		if (perspectiveRoot != null) {
+			root.getChildren().remove(perspectiveRoot);
+			perspectiveRoot = null;
+		}
+		
+		perspectiveRoot = perspectiveController.getPerspectiveRoot();
+		AnchorPane.setTopAnchor(perspectiveRoot, 37.0);
+		AnchorPane.setBottomAnchor(perspectiveRoot, 0.0);
+		AnchorPane.setLeftAnchor(perspectiveRoot, 0.0);
+		AnchorPane.setRightAnchor(perspectiveRoot, 0.0);
+		root.getChildren().add(perspectiveRoot);
 	}
 }

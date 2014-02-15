@@ -1,4 +1,4 @@
-package workbenchfx;
+package workbenchfx.perspective.metadata;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -26,6 +26,8 @@ import com.sforce.soap.metadata.ListMetadataQuery;
 import com.sforce.soap.metadata.MetadataConnection;
 import com.sforce.soap.metadata.SaveResult;
 import com.sforce.ws.ConnectionException;
+
+import workbenchfx.SOAPLogHandler;
 
 public class DescribeAndListController {
 	
@@ -276,7 +278,8 @@ public class DescribeAndListController {
 		}
 	}
 	
-	private Main application;
+	private MetadataPerspective perspective;
+	//private Main application;
 	
 	private SortedMap<String, DescribeMetadataObject> metadataDescription;
 	private Map<String, SortedMap<String, FileProperties>> metadataLists = new TreeMap<>();
@@ -291,11 +294,11 @@ public class DescribeAndListController {
 	private Button deleteButton;
 	private Button cancelButton;
 	
-	public DescribeAndListController(Main application) {
-		this.application = application;
+	public DescribeAndListController(MetadataPerspective perspective) {
+		this.perspective = perspective;
 		createGraph();
-		application.metadataConnection().addListener((o, oldValue, newValue) -> handleMetadataConnectionChanged());
-		application.userInfo().addListener((o, oldValue, newValue) -> handleUserInfoChanged(oldValue, newValue));
+		perspective.getApplication().metadataConnection().addListener((o, oldValue, newValue) -> handleMetadataConnectionChanged());
+		perspective.getApplication().userInfo().addListener((o, oldValue, newValue) -> handleUserInfoChanged(oldValue, newValue));
 	}
 	
 	public Node getRoot() {
@@ -352,7 +355,7 @@ public class DescribeAndListController {
 	}
 	
 	private void handleMetadataConnectionChanged() {
-		if (application.metadataConnection().get() != null) {
+		if (perspective.getApplication().metadataConnection().get() != null) {
 			setDisablesForTreeSelection();
 			showPropertiesForTreeSelection();
 		}
@@ -391,7 +394,7 @@ public class DescribeAndListController {
 			return;
 		}
 		
-		boolean connected = application.metadataConnection().get() != null;
+		boolean connected = perspective.getApplication().metadataConnection().get() != null;
 		
 		if (selectedItem == descriptionAndListsTree.getRoot()) {
 			if (connected) {
@@ -455,18 +458,18 @@ public class DescribeAndListController {
 		}
 		
 		if (selectedItem == descriptionAndListsTree.getRoot()) {
-			application.getPropertiesController().showPropertiesForUserInfo(application.userInfo().get());
+			perspective.getPropertiesController().showPropertiesForUserInfo(perspective.getApplication().userInfo().get());
 		}
 		else if (selectedItem.getParent() == descriptionAndListsTree.getRoot()) {
 			DescribeMetadataObject dmo = metadataDescription.get(selectedItem.getValue());
-			application.getPropertiesController().showPropertiesForType(dmo);
+			perspective.getPropertiesController().showPropertiesForType(dmo);
 		}
 		else {
 			String typeName = selectedItem.getParent().getValue();
 			SortedMap<String, FileProperties> fileMap = metadataLists.get(typeName);
 			String fullName = selectedItem.getValue();
 			FileProperties fp = fileMap.get(fullName);
-			application.getPropertiesController().showPropertiesForFile(fp);
+			perspective.getPropertiesController().showPropertiesForFile(fp);
 		}
 	}
 	
@@ -485,17 +488,17 @@ public class DescribeAndListController {
 		String oldFullName = e.getOldValue();
 		String newFullName = e.getNewValue();
 		
-		final RenameWorker renameWorker = new RenameWorker(application.metadataConnection().get(), typeName, oldFullName, newFullName);
+		final RenameWorker renameWorker = new RenameWorker(perspective.getApplication().metadataConnection().get(), typeName, oldFullName, newFullName);
 		renameWorker.setOnSucceeded(es -> {
 			
 			if (renameWorker.getValue().getSuccess()) {
-				application.getLogController().log(renameWorker.getValue().getLogHandler());
+				perspective.getLogController().log(renameWorker.getValue().getLogHandler());
 				
 				SortedMap<String, FileProperties> list = metadataLists.get(typeName);
 				FileProperties fp = list.get(oldFullName);
 				list.remove(oldFullName);
 				
-				application.getEditorController().close(typeName, oldFullName);
+				perspective.getEditorController().close(typeName, oldFullName);
 				
 				DescribeMetadataObject dmo = metadataDescription.get(typeName);
 				String directory = dmo.getDirectoryName();
@@ -504,7 +507,7 @@ public class DescribeAndListController {
 				fp.setFullName(newFullName);
 				list.put(newFullName, fp);
 				
-				application.getPropertiesController().showPropertiesForFile(fp);
+				perspective.getPropertiesController().showPropertiesForFile(fp);
 			}
 			else {
 				editedItem.setValue(oldFullName);
@@ -529,9 +532,9 @@ public class DescribeAndListController {
 		descriptionAndListsTree.setDisable(true);
 		describeButton.setDisable(true);
 		
-		final DescribeWorker describeWorker = new DescribeWorker(application.metadataConnection().get(), application.apiVersion().get());
+		final DescribeWorker describeWorker = new DescribeWorker(perspective.getApplication().metadataConnection().get(), perspective.getApplication().apiVersion().get());
 		describeWorker.setOnSucceeded(es -> {
-			application.getPropertiesController().showPropertiesForType(null);
+			perspective.getPropertiesController().showPropertiesForType(null);
 			metadataLists.clear();
 			metadataDescription = describeWorker.getValue().getDescription();
 			ObservableList<TreeItem<String>> describeAndListTreeItems = descriptionAndListsTree.getRoot().getChildren();
@@ -539,7 +542,7 @@ public class DescribeAndListController {
 			for (String metadataTypeName : metadataDescription.keySet()) {
 				describeAndListTreeItems.add(new TreeItem<String>(metadataTypeName));
 			}
-			application.getLogController().log(describeWorker.getValue().getLogHandler());
+			perspective.getLogController().log(describeWorker.getValue().getLogHandler());
 			
 			setDisablesForOperationCompletion();
 		});
@@ -563,7 +566,7 @@ public class DescribeAndListController {
 		TreeItem<String> selectedItem = descriptionAndListsTree.getSelectionModel().getSelectedItem();
 		String selectedTypeName = selectedItem.getValue().toString();
 		
-		final ListWorker listWorker = new ListWorker(application.metadataConnection().get(), application.apiVersion().get(), selectedTypeName);
+		final ListWorker listWorker = new ListWorker(perspective.getApplication().metadataConnection().get(), perspective.getApplication().apiVersion().get(), selectedTypeName);
 		listWorker.setOnSucceeded(es -> {
 			SortedMap<String, FileProperties> listResult = listWorker.getValue().getList();
 			metadataLists.put(selectedTypeName, listResult);
@@ -575,7 +578,7 @@ public class DescribeAndListController {
 				}
 				selectedTypeItem.setExpanded(true);
 			}
-			application.getLogController().log(listWorker.getValue().getLogHandler());
+			perspective.getLogController().log(listWorker.getValue().getLogHandler());
 			
 			descriptionAndListsTree.getSelectionModel().select(selectedItem);
 			
@@ -601,7 +604,7 @@ public class DescribeAndListController {
 		String typeName = selectedItem.getParent().getValue();
 		String fullName = selectedItem.getValue();
 		
-		application.getEditorController().edit(typeName, fullName);
+		perspective.getEditorController().edit(typeName, fullName);
 	}
 	
 	private void handleDeleteButtonClicked(ActionEvent e) {
@@ -619,12 +622,12 @@ public class DescribeAndListController {
 		SortedMap<String, FileProperties> fileMap = metadataLists.get(typeName);
 		String fullName = selectedItem.getValue();
 		
-		final DeleteWorker deleteWorker = new DeleteWorker(application.metadataConnection().get(), typeName, fullName);
+		final DeleteWorker deleteWorker = new DeleteWorker(perspective.getApplication().metadataConnection().get(), typeName, fullName);
 		deleteWorker.setOnSucceeded(es -> {
 			
 			boolean deleted = deleteWorker.getValue().getSuccess();
 			if (deleted) {
-				application.getEditorController().close(typeName, fullName);
+				perspective.getEditorController().close(typeName, fullName);
 				// TODO: Set selection somewhere helpful
 				selectedItem.getParent().getChildren().remove(selectedItem);
 				fileMap.remove(fullName);
@@ -633,7 +636,7 @@ public class DescribeAndListController {
 				deleteButton.setDisable(false);
 				readButton.setDisable(false);
 			}
-			application.getLogController().log(deleteWorker.getValue().getLogHandler());
+			perspective.getLogController().log(deleteWorker.getValue().getLogHandler());
 			
 			setDisablesForOperationCompletion();
 		});

@@ -1,4 +1,4 @@
-package workbenchfx.editor;
+package workbenchfx.editor.metadata;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

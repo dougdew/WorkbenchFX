@@ -1,4 +1,4 @@
-package workbenchfx.editor;
+package workbenchfx.editor.metadata;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +11,7 @@ public class EditorFactory {
 	
 	private static Map<String, EditorCreator> creators;
 	static {
-		creators = new HashMap<String, EditorCreator>();
+		creators = new HashMap<>();
 		// For now, this is commented out while completing the implementation of the default editor.
 		// This will be uncommented once the dual view stuff is implemented.
 		//creators.put(CustomObjectEditor.getType(), () -> new CustomObjectEditor());

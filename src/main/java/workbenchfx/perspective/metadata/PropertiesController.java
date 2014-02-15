@@ -1,4 +1,4 @@
-package workbenchfx;
+package workbenchfx.perspective.metadata;
 
 import java.util.Calendar;
 
@@ -37,7 +37,7 @@ public class PropertiesController {
 		}
 	}
 
-	private Main application;
+	private MetadataPerspective perspective;
 	
 	private AnchorPane root;
 	private TreeTableView<MetadataProperty> treeTableView;
@@ -45,8 +45,8 @@ public class PropertiesController {
 	private TreeTableColumn<MetadataProperty, String> nameColumn;
 	private TreeTableColumn<MetadataProperty, String> valueColumn;
 	
-	public PropertiesController(Main application) {
-		this.application = application;
+	public PropertiesController(MetadataPerspective perspective) {
+		this.perspective = perspective;
 		createGraph();
 		showPropertiesForUserInfo(null);
 	}

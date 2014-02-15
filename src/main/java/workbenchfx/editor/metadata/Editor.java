@@ -1,4 +1,4 @@
-package workbenchfx.editor;
+package workbenchfx.editor.metadata;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.Node;
