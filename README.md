@@ -9,4 +9,4 @@ The code in this project uses JavaFX and lambdas. Therefore, this project depend
 
 The drop down list for selecting a server is intentionally blank. For now, it is up to you to add entries to that list. You can add entries to that list by adding code to LoginController.java.
 
-The drop down list for api version shows many versions, but for now, it is only meaningful to select version 31.0.
+The drop down list for api version shows many versions, but for now, it is only correct to select the version for which you've generated stubs.
