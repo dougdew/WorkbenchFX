@@ -15,17 +15,7 @@
 		<dependency>
 			<groupId>com.force.api</groupId>
 			<artifactId>force-wsc</artifactId>
-			<version>30.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.force.api</groupId>
-			<artifactId>force-enterprise-api</artifactId>
-			<version>31.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.force.api</groupId>
-			<artifactId>force-metadata-api</artifactId>
-			<version>31.0.0</version>
+			<version>29.0.0</version>
 		</dependency>
 	</dependencies>
 
@@ -40,6 +30,68 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.plugin.classpath" />
+                                <for param="wsdl" parallel="true">
+                                    <path>
+                                        <fileset dir="${project.basedir}/src/main/wsdls" includes="*.wsdl"/>
+                                    </path>
+                                    <sequential>
+                                        <echo message="Generating sources from @{wsdl}" />
+                                        <java classname="com.sforce.ws.tools.wsdlc" classpathref="maven.compile.classpath" fork="true">
+                                            <arg value="-nc"/>
+                                            <arg value="@{wsdl}"/>
+                                            <arg value="-"/>
+                                            <arg value="${project.build.directory}/generated-sources/wsc"/>
+                                        </java>
+                                    </sequential>
+                                </for>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>ant-contrib</groupId>
+                        <artifactId>ant-contrib</artifactId>
+                        <version>1.0b3</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>ant</groupId>
+                                <artifactId>ant</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 </project>
