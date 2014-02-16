@@ -1,4 +1,4 @@
-package workbenchfx.perspective.metadata;
+package workbenchfx.perspective.metadata.mode;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
@@ -30,7 +30,7 @@ import workbenchfx.SOAPLogHandler;
 import workbenchfx.editor.metadata.Editor;
 import workbenchfx.editor.metadata.EditorFactory;
 
-public class EditorController {
+public class CRUDEditorController {
 	
 	private static class CreateWorkerResults {
 		
@@ -277,7 +277,7 @@ public class EditorController {
 	
 	private static int newFileCounter = 1;
 	
-	private MetadataPerspective perspective;
+	private CRUDMode mode;
 	
 	private Map<String, FileController> fileControllers = new HashMap<String, FileController>();
 	
@@ -289,11 +289,11 @@ public class EditorController {
 	private Button cancelButton;
 	private TabPane tabPane;
 	
-	public EditorController(MetadataPerspective perspective) {
-		this.perspective = perspective;
+	public CRUDEditorController(CRUDMode mode) {
+		this.mode = mode;
 		createGraph();
-		perspective.getApplication().metadataConnection().addListener((o, oldValue, newValue) -> handleMetadataConnectionChanged());
-		perspective.getApplication().userInfo().addListener((o, oldValue, newValue) -> handleUserInfoChanged(oldValue, newValue));
+		mode.getPerspective().getApplication().metadataConnection().addListener((o, oldValue, newValue) -> handleMetadataConnectionChanged());
+		mode.getPerspective().getApplication().userInfo().addListener((o, oldValue, newValue) -> handleUserInfoChanged(oldValue, newValue));
 	}
 
 	public Node getRoot() {
@@ -325,12 +325,12 @@ public class EditorController {
 		tab.setContent(editor.getRoot());
 		fileController.setEditor(editor);
 		
-		final ReadWorker readWorker = new ReadWorker(perspective.getApplication().metadataConnection().get(), type, fullName);
+		final ReadWorker readWorker = new ReadWorker(mode.getPerspective().getApplication().metadataConnection().get(), type, fullName);
 		readWorker.setOnSucceeded(e -> {
 			Metadata m = readWorker.getValue().getMetadata();
 			fileController.setMetadata(m);
 			editor.setMetadata(m);
-			perspective.getLogController().log(readWorker.getValue().getLogHandler());
+			mode.getPerspective().getLogController().log(readWorker.getValue().getLogHandler());
 			
 			setDisablesForOperationCompletion();
 		});	
@@ -417,7 +417,7 @@ public class EditorController {
 	
 	private void handleMetadataConnectionChanged() {
 		
-		if (perspective.getApplication().metadataConnection().get() != null) {
+		if (mode.getPerspective().getApplication().metadataConnection().get() != null) {
 		}
 		else {
 			createButton.setDisable(true);
@@ -461,7 +461,7 @@ public class EditorController {
 	
 	private void handleCreateButtonClicked(ActionEvent e) {
 		
-		if (perspective.getApplication().metadataConnection().get() == null) {
+		if (mode.getPerspective().getApplication().metadataConnection().get() == null) {
 			return;
 		}
 		
@@ -479,9 +479,9 @@ public class EditorController {
 		editor.lock();
 		String xml = editor.getMetadataAsXml();
 		
-		final CreateWorker createWorker = new CreateWorker(perspective.getApplication().metadataConnection().get(), xml);
+		final CreateWorker createWorker = new CreateWorker(mode.getPerspective().getApplication().metadataConnection().get(), xml);
 		createWorker.setOnSucceeded(es -> {
-			perspective.getLogController().log(createWorker.getValue().getLogHandler());
+			mode.getPerspective().getLogController().log(createWorker.getValue().getLogHandler());
 			cancelButton.setDisable(true);
 			boolean created = createWorker.getValue().getSuccess();
 			if (created) {
@@ -507,7 +507,7 @@ public class EditorController {
 	
 	private void handleUpdateButtonClicked(ActionEvent e) {
 		
-		if (perspective.getApplication().metadataConnection().get() == null) {
+		if (mode.getPerspective().getApplication().metadataConnection().get() == null) {
 			return;
 		}
 		
@@ -525,9 +525,9 @@ public class EditorController {
 		editor.lock();
 		Metadata m = editor.getMetadata();
 		
-		final UpdateWorker updateWorker = new UpdateWorker(perspective.getApplication().metadataConnection().get(), m);
+		final UpdateWorker updateWorker = new UpdateWorker(mode.getPerspective().getApplication().metadataConnection().get(), m);
 		updateWorker.setOnSucceeded(es -> {
-			perspective.getLogController().log(updateWorker.getValue().getLogHandler());
+			mode.getPerspective().getLogController().log(updateWorker.getValue().getLogHandler());
 			cancelButton.setDisable(true);
 			boolean updated = updateWorker.getValue().getSuccess();
 			if (updated) {
@@ -562,7 +562,7 @@ public class EditorController {
 			createButton.setDisable(true);
 		}
 		else {
-			boolean connected = perspective.getApplication().metadataConnection().get() != null;
+			boolean connected = mode.getPerspective().getApplication().metadataConnection().get() != null;
 			
 			Tab tab = tabPane.getSelectionModel().getSelectedItem();
 			String fileName = tab.getText();

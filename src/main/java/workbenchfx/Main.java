@@ -25,7 +25,9 @@ public class Main extends Application {
 	private static final String METADATA_NAMESPACE = "http://soap.sforce.com/2006/04/metadata";
 	
 	private AnchorPane root;
+	private HBox toolBarBox;
 	private Node perspectiveRoot;
+	private Node perspectiveModeToolBarRoot;
 	
 	private LoginController loginController;
 	private PerspectiveController perspectiveController;
@@ -100,7 +102,7 @@ public class Main extends Application {
 		scene.getStylesheets().add(getClass().getResource(CSS_FILE).toExternalForm());
 		
 		// Toolbar pane
-		HBox toolBarBox = new HBox();
+		toolBarBox = new HBox();
 		AnchorPane.setTopAnchor(toolBarBox, 0.0);
 		AnchorPane.setLeftAnchor(toolBarBox, 0.0);
 		root.getChildren().add(toolBarBox);
@@ -114,9 +116,9 @@ public class Main extends Application {
 		perspectiveController = new PerspectiveController(this);
 		Node perspectiveToolBarRoot = perspectiveController.getToolBarRoot();
 		scene.getStylesheets().add(PerspectiveController.class.getResource(PerspectiveController.getCSSFileName()).toExternalForm());
+		toolBarBox.getChildren().add(perspectiveToolBarRoot);
 		handlePerspectiveChanged();
 		perspectiveController.activePerspective().addListener(e -> handlePerspectiveChanged());
-		toolBarBox.getChildren().add(perspectiveToolBarRoot);
 		
 		return scene;
 	}
@@ -128,11 +130,21 @@ public class Main extends Application {
 			perspectiveRoot = null;
 		}
 		
+		if (perspectiveModeToolBarRoot != null) {
+			toolBarBox.getChildren().remove(perspectiveModeToolBarRoot);
+			perspectiveModeToolBarRoot = null;
+		}
+		
 		perspectiveRoot = perspectiveController.getPerspectiveRoot();
 		AnchorPane.setTopAnchor(perspectiveRoot, 37.0);
 		AnchorPane.setBottomAnchor(perspectiveRoot, 0.0);
 		AnchorPane.setLeftAnchor(perspectiveRoot, 0.0);
 		AnchorPane.setRightAnchor(perspectiveRoot, 0.0);
 		root.getChildren().add(perspectiveRoot);
+		
+		perspectiveModeToolBarRoot = perspectiveController.getPerspectiveModeToolBarRoot();
+		if (perspectiveModeToolBarRoot != null) {
+			toolBarBox.getChildren().add(perspectiveModeToolBarRoot);
+		}
 	}
 }

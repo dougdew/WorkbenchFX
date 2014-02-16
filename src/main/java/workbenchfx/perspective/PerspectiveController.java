@@ -38,7 +38,7 @@ public class PerspectiveController {
 	private ToggleButton dataApiButton;
 	private ToggleButton connectApiButton;
 	
-	private ObjectProperty<Perspective> activePerspectiveProperty = new SimpleObjectProperty<Perspective>();
+	private ObjectProperty<Perspective> activePerspectiveProperty = new SimpleObjectProperty<>();
 	
 	private Map<PerspectiveFactory.Type, Perspective> perspectives = new HashMap<>();
 	private Map<String, PerspectiveFactory.Type> perspectiveTypes = new HashMap<>();
@@ -53,8 +53,6 @@ public class PerspectiveController {
 	public PerspectiveController(Main application) {
 		this.application = application;
 		createToolBarGraph();
-		application.metadataConnection().addListener(e -> handleMetadataConnectionChanged());
-		application.userInfo().addListener((o, oldValue, newValue) -> handleUserInfoChanged(oldValue, newValue));
 	}
 	
 	public ObjectProperty<Perspective> activePerspective() {
@@ -74,6 +72,16 @@ public class PerspectiveController {
 		
 		return activePerspectiveProperty.get().getRoot();
 	}
+	
+	public Node getPerspectiveModeToolBarRoot() {
+		
+		if (activePerspectiveProperty.get() != null) {
+			return activePerspectiveProperty.get().getModeToolBarRoot();
+		}
+		else {
+			return null;
+		}
+	}
 
 	private void createToolBarGraph() {
 		
@@ -87,8 +95,6 @@ public class PerspectiveController {
 		mdApiButton = new ToggleButton(MD);
 		mdApiButton.getStyleClass().add("left-pill");
 		mdApiButton.setToggleGroup(perspectiveGroup);
-		perspectiveGroup.selectToggle(mdApiButton);
-		perspectiveGroup.selectedToggleProperty().addListener(e -> handlePerspectiveToggleChanged());
 		perspectiveBox.getChildren().add(mdApiButton);
 		
 		toolingApiButton = new ToggleButton(TOOLING);
@@ -105,14 +111,9 @@ public class PerspectiveController {
 		connectApiButton.getStyleClass().add("right-pill");
 		connectApiButton.setToggleGroup(perspectiveGroup);
 		perspectiveBox.getChildren().add(connectApiButton);
-	}
-	
-	private void handleMetadataConnectionChanged() {
 		
-	}
-	
-	private void handleUserInfoChanged(GetUserInfoResult oldValue, GetUserInfoResult newValue) {
-		
+		perspectiveGroup.selectToggle(mdApiButton);
+		perspectiveGroup.selectedToggleProperty().addListener(e -> handlePerspectiveToggleChanged());
 	}
 	
 	private void handlePerspectiveToggleChanged() {

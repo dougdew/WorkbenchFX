@@ -1,4 +1,4 @@
-package workbenchfx.perspective.metadata;
+package workbenchfx.perspective.metadata.mode;
 
 import java.util.Calendar;
 
@@ -16,7 +16,7 @@ import com.sforce.soap.enterprise.GetUserInfoResult;
 import com.sforce.soap.metadata.DescribeMetadataObject;
 import com.sforce.soap.metadata.FileProperties;
 
-public class PropertiesController {
+public class CRUDPropertiesViewerController {
 	
 	public static class MetadataProperty {
 		
@@ -37,7 +37,7 @@ public class PropertiesController {
 		}
 	}
 
-	private MetadataPerspective perspective;
+	private CRUDMode mode;
 	
 	private AnchorPane root;
 	private TreeTableView<MetadataProperty> treeTableView;
@@ -45,8 +45,8 @@ public class PropertiesController {
 	private TreeTableColumn<MetadataProperty, String> nameColumn;
 	private TreeTableColumn<MetadataProperty, String> valueColumn;
 	
-	public PropertiesController(MetadataPerspective perspective) {
-		this.perspective = perspective;
+	public CRUDPropertiesViewerController(CRUDMode mode) {
+		this.mode = mode;
 		createGraph();
 		showPropertiesForUserInfo(null);
 	}

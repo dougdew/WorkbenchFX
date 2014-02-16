@@ -4,7 +4,9 @@ import javafx.scene.Node;
 
 public interface Perspective {
 	
-	public Node getRoot();
+	Node getRoot();
 	
-	public void captureLog();
+	Node getModeToolBarRoot();
+	
+	void captureLog();
 }

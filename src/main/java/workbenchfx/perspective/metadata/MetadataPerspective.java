@@ -3,6 +3,7 @@ package workbenchfx.perspective.metadata;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 
 import workbenchfx.LogController;
@@ -13,9 +14,7 @@ public class MetadataPerspective implements Perspective {
 	
 	private Main application;
 	
-	private NavigatorController navigatorController;
-	private PropertiesController propertiesController;
-	private EditorController editorController;
+	private ModeController modeController;
 	private LogController logController;
 	
 	private SplitPane root;
@@ -26,6 +25,9 @@ public class MetadataPerspective implements Perspective {
 	private AnchorPane editorPane;
 	private AnchorPane logPane;
 	private Node logGraphRoot;
+	private Node navigatorRoot;
+	private Node propertiesViewerRoot;
+	private Node editorRoot;
 
 	public MetadataPerspective(Main application) {
 		this.application = application;
@@ -37,18 +39,6 @@ public class MetadataPerspective implements Perspective {
 		return application;
 	}
 	
-	public NavigatorController getNavigatorController() {
-		return navigatorController;
-	}
-	
-	public PropertiesController getPropertiesController() {
-		return propertiesController;
-	}
-	
-	public EditorController getEditorController() {
-		return editorController;
-	}
-	
 	public LogController getLogController() {
 		return logController;
 	}
@@ -57,11 +47,17 @@ public class MetadataPerspective implements Perspective {
 		return root;
 	}
 	
+	public Node getModeToolBarRoot() {
+		return modeController.getToolBarRoot();
+	}
+	
 	public void captureLog() {
 		addLogToGraph();
 	}
 	
 	private void createGraph() {
+		
+		modeController = new ModeController(this);
 		
 		// Main split pane
 		root = new SplitPane();
@@ -79,7 +75,8 @@ public class MetadataPerspective implements Perspective {
 		AnchorPane.setRightAnchor(leftSplitPane, 0.0);
 		mainLeftPane.getChildren().add(leftSplitPane);
 		
-		// Describe and list pane
+		/*
+		// Navigator
 		navigatorController = new NavigatorController(this);
 		Node describeAndListGraphRoot = navigatorController.getRoot();
 		AnchorPane.setTopAnchor(describeAndListGraphRoot, 0.0);
@@ -95,7 +92,7 @@ public class MetadataPerspective implements Perspective {
 		AnchorPane.setBottomAnchor(propertiesGraphRoot, 0.0);
 		AnchorPane.setLeftAnchor(propertiesGraphRoot, 0.0);
 		AnchorPane.setRightAnchor(propertiesGraphRoot, 0.0);
-		leftSplitPane.getItems().add(propertiesGraphRoot);
+		leftSplitPane.getItems().add(propertiesGraphRoot);*/
 		
 		// Right split pane
 		rightSplitPane = new SplitPane();
@@ -110,6 +107,7 @@ public class MetadataPerspective implements Perspective {
 		logPane = new AnchorPane();
 		rightSplitPane.getItems().addAll(editorPane, logPane);
 		
+		/*
 		// Editor pane
 		editorController = new EditorController(this);
 		Node editorGraphRoot = editorController.getRoot();
@@ -117,7 +115,10 @@ public class MetadataPerspective implements Perspective {
 		AnchorPane.setBottomAnchor(editorGraphRoot, 0.0);
 		AnchorPane.setLeftAnchor(editorGraphRoot, 0.0);
 		AnchorPane.setRightAnchor(editorGraphRoot, 0.0);
-		editorPane.getChildren().add(editorGraphRoot);
+		editorPane.getChildren().add(editorGraphRoot);*/
+		
+		handleModeChanged();
+		modeController.activeMode().addListener(e -> handleModeChanged());
 	}
 	
 	private void addLogToGraph() {
@@ -133,5 +134,56 @@ public class MetadataPerspective implements Perspective {
 		AnchorPane.setLeftAnchor(logGraphRoot, 0.0);
 		AnchorPane.setRightAnchor(logGraphRoot, 0.0);
 		logPane.getChildren().add(logGraphRoot);
+	}
+	
+	private void handleModeChanged() {
+		
+		if (navigatorRoot != null) {
+			leftSplitPane.getItems().remove(navigatorRoot);
+			navigatorRoot = null;
+		}
+		
+		if (propertiesViewerRoot != null) {
+			leftSplitPane.getItems().remove(propertiesViewerRoot);
+			propertiesViewerRoot = null;
+		}
+		
+		if (editorRoot != null) {
+			editorPane.getChildren().remove(editorRoot);
+			editorRoot = null;
+		}
+		
+		// Navigator
+		navigatorRoot = modeController.getNavigatorRoot();
+		if (navigatorRoot == null) {
+			navigatorRoot = new TextArea("Navigator: Under Construction");
+		}
+		AnchorPane.setTopAnchor(navigatorRoot, 0.0);
+		AnchorPane.setBottomAnchor(navigatorRoot, 0.0);
+		AnchorPane.setLeftAnchor(navigatorRoot, 0.0);
+		AnchorPane.setRightAnchor(navigatorRoot, 0.0);
+		leftSplitPane.getItems().add(navigatorRoot);
+		
+		// Properties pane
+		propertiesViewerRoot = modeController.getPropertiesViewerRoot();
+		if (propertiesViewerRoot == null) {
+			propertiesViewerRoot = new TextArea("Properties Viewer: Under Construction");
+		}
+		AnchorPane.setTopAnchor(propertiesViewerRoot, 0.0);
+		AnchorPane.setBottomAnchor(propertiesViewerRoot, 0.0);
+		AnchorPane.setLeftAnchor(propertiesViewerRoot, 0.0);
+		AnchorPane.setRightAnchor(propertiesViewerRoot, 0.0);
+		leftSplitPane.getItems().add(propertiesViewerRoot);
+		
+		// Editor pane
+		editorRoot = modeController.getEditorRoot();
+		if (editorRoot == null) {
+			editorRoot = new TextArea("Editor: Under Construction");
+		}
+		AnchorPane.setTopAnchor(editorRoot, 0.0);
+		AnchorPane.setBottomAnchor(editorRoot, 0.0);
+		AnchorPane.setLeftAnchor(editorRoot, 0.0);
+		AnchorPane.setRightAnchor(editorRoot, 0.0);
+		editorPane.getChildren().add(editorRoot);
 	}
 }

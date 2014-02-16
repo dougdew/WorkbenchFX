@@ -1,4 +1,4 @@
-package workbenchfx.perspective.metadata;
+package workbenchfx.perspective.metadata.mode;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -29,7 +29,7 @@ import com.sforce.ws.ConnectionException;
 
 import workbenchfx.SOAPLogHandler;
 
-public class NavigatorController {
+public class CRUDNavigatorController {
 	
 	private static class DescribeWorkerResults {
 		
@@ -278,8 +278,7 @@ public class NavigatorController {
 		}
 	}
 	
-	private MetadataPerspective perspective;
-	//private Main application;
+	private CRUDMode mode;
 	
 	private SortedMap<String, DescribeMetadataObject> metadataDescription;
 	private Map<String, SortedMap<String, FileProperties>> metadataLists = new TreeMap<>();
@@ -294,11 +293,11 @@ public class NavigatorController {
 	private Button deleteButton;
 	private Button cancelButton;
 	
-	public NavigatorController(MetadataPerspective perspective) {
-		this.perspective = perspective;
+	public CRUDNavigatorController(CRUDMode mode) {
+		this.mode = mode;
 		createGraph();
-		perspective.getApplication().metadataConnection().addListener((o, oldValue, newValue) -> handleMetadataConnectionChanged());
-		perspective.getApplication().userInfo().addListener((o, oldValue, newValue) -> handleUserInfoChanged(oldValue, newValue));
+		mode.getPerspective().getApplication().metadataConnection().addListener((o, oldValue, newValue) -> handleMetadataConnectionChanged());
+		mode.getPerspective().getApplication().userInfo().addListener((o, oldValue, newValue) -> handleUserInfoChanged(oldValue, newValue));
 	}
 	
 	public Node getRoot() {
@@ -355,7 +354,7 @@ public class NavigatorController {
 	}
 	
 	private void handleMetadataConnectionChanged() {
-		if (perspective.getApplication().metadataConnection().get() != null) {
+		if (mode.getPerspective().getApplication().metadataConnection().get() != null) {
 			setDisablesForTreeSelection();
 			showPropertiesForTreeSelection();
 		}
@@ -394,7 +393,7 @@ public class NavigatorController {
 			return;
 		}
 		
-		boolean connected = perspective.getApplication().metadataConnection().get() != null;
+		boolean connected = mode.getPerspective().getApplication().metadataConnection().get() != null;
 		
 		if (selectedItem == descriptionAndListsTree.getRoot()) {
 			if (connected) {
@@ -458,18 +457,18 @@ public class NavigatorController {
 		}
 		
 		if (selectedItem == descriptionAndListsTree.getRoot()) {
-			perspective.getPropertiesController().showPropertiesForUserInfo(perspective.getApplication().userInfo().get());
+			mode.getPropertiesViewerController().showPropertiesForUserInfo(mode.getPerspective().getApplication().userInfo().get());
 		}
 		else if (selectedItem.getParent() == descriptionAndListsTree.getRoot()) {
 			DescribeMetadataObject dmo = metadataDescription.get(selectedItem.getValue());
-			perspective.getPropertiesController().showPropertiesForType(dmo);
+			mode.getPropertiesViewerController().showPropertiesForType(dmo);
 		}
 		else {
 			String typeName = selectedItem.getParent().getValue();
 			SortedMap<String, FileProperties> fileMap = metadataLists.get(typeName);
 			String fullName = selectedItem.getValue();
 			FileProperties fp = fileMap.get(fullName);
-			perspective.getPropertiesController().showPropertiesForFile(fp);
+			mode.getPropertiesViewerController().showPropertiesForFile(fp);
 		}
 	}
 	
@@ -488,17 +487,17 @@ public class NavigatorController {
 		String oldFullName = e.getOldValue();
 		String newFullName = e.getNewValue();
 		
-		final RenameWorker renameWorker = new RenameWorker(perspective.getApplication().metadataConnection().get(), typeName, oldFullName, newFullName);
+		final RenameWorker renameWorker = new RenameWorker(mode.getPerspective().getApplication().metadataConnection().get(), typeName, oldFullName, newFullName);
 		renameWorker.setOnSucceeded(es -> {
 			
 			if (renameWorker.getValue().getSuccess()) {
-				perspective.getLogController().log(renameWorker.getValue().getLogHandler());
+				mode.getPerspective().getLogController().log(renameWorker.getValue().getLogHandler());
 				
 				SortedMap<String, FileProperties> list = metadataLists.get(typeName);
 				FileProperties fp = list.get(oldFullName);
 				list.remove(oldFullName);
 				
-				perspective.getEditorController().close(typeName, oldFullName);
+				mode.getEditorController().close(typeName, oldFullName);
 				
 				DescribeMetadataObject dmo = metadataDescription.get(typeName);
 				String directory = dmo.getDirectoryName();
@@ -507,7 +506,7 @@ public class NavigatorController {
 				fp.setFullName(newFullName);
 				list.put(newFullName, fp);
 				
-				perspective.getPropertiesController().showPropertiesForFile(fp);
+				mode.getPropertiesViewerController().showPropertiesForFile(fp);
 			}
 			else {
 				editedItem.setValue(oldFullName);
@@ -532,9 +531,9 @@ public class NavigatorController {
 		descriptionAndListsTree.setDisable(true);
 		describeButton.setDisable(true);
 		
-		final DescribeWorker describeWorker = new DescribeWorker(perspective.getApplication().metadataConnection().get(), perspective.getApplication().apiVersion().get());
+		final DescribeWorker describeWorker = new DescribeWorker(mode.getPerspective().getApplication().metadataConnection().get(), mode.getPerspective().getApplication().apiVersion().get());
 		describeWorker.setOnSucceeded(es -> {
-			perspective.getPropertiesController().showPropertiesForType(null);
+			mode.getPropertiesViewerController().showPropertiesForType(null);
 			metadataLists.clear();
 			metadataDescription = describeWorker.getValue().getDescription();
 			ObservableList<TreeItem<String>> describeAndListTreeItems = descriptionAndListsTree.getRoot().getChildren();
@@ -542,7 +541,7 @@ public class NavigatorController {
 			for (String metadataTypeName : metadataDescription.keySet()) {
 				describeAndListTreeItems.add(new TreeItem<String>(metadataTypeName));
 			}
-			perspective.getLogController().log(describeWorker.getValue().getLogHandler());
+			mode.getPerspective().getLogController().log(describeWorker.getValue().getLogHandler());
 			
 			setDisablesForOperationCompletion();
 		});
@@ -566,7 +565,7 @@ public class NavigatorController {
 		TreeItem<String> selectedItem = descriptionAndListsTree.getSelectionModel().getSelectedItem();
 		String selectedTypeName = selectedItem.getValue().toString();
 		
-		final ListWorker listWorker = new ListWorker(perspective.getApplication().metadataConnection().get(), perspective.getApplication().apiVersion().get(), selectedTypeName);
+		final ListWorker listWorker = new ListWorker(mode.getPerspective().getApplication().metadataConnection().get(), mode.getPerspective().getApplication().apiVersion().get(), selectedTypeName);
 		listWorker.setOnSucceeded(es -> {
 			SortedMap<String, FileProperties> listResult = listWorker.getValue().getList();
 			metadataLists.put(selectedTypeName, listResult);
@@ -578,7 +577,7 @@ public class NavigatorController {
 				}
 				selectedTypeItem.setExpanded(true);
 			}
-			perspective.getLogController().log(listWorker.getValue().getLogHandler());
+			mode.getPerspective().getLogController().log(listWorker.getValue().getLogHandler());
 			
 			descriptionAndListsTree.getSelectionModel().select(selectedItem);
 			
@@ -604,7 +603,7 @@ public class NavigatorController {
 		String typeName = selectedItem.getParent().getValue();
 		String fullName = selectedItem.getValue();
 		
-		perspective.getEditorController().edit(typeName, fullName);
+		mode.getEditorController().edit(typeName, fullName);
 	}
 	
 	private void handleDeleteButtonClicked(ActionEvent e) {
@@ -622,12 +621,12 @@ public class NavigatorController {
 		SortedMap<String, FileProperties> fileMap = metadataLists.get(typeName);
 		String fullName = selectedItem.getValue();
 		
-		final DeleteWorker deleteWorker = new DeleteWorker(perspective.getApplication().metadataConnection().get(), typeName, fullName);
+		final DeleteWorker deleteWorker = new DeleteWorker(mode.getPerspective().getApplication().metadataConnection().get(), typeName, fullName);
 		deleteWorker.setOnSucceeded(es -> {
 			
 			boolean deleted = deleteWorker.getValue().getSuccess();
 			if (deleted) {
-				perspective.getEditorController().close(typeName, fullName);
+				mode.getEditorController().close(typeName, fullName);
 				// TODO: Set selection somewhere helpful
 				selectedItem.getParent().getChildren().remove(selectedItem);
 				fileMap.remove(fullName);
@@ -636,7 +635,7 @@ public class NavigatorController {
 				deleteButton.setDisable(false);
 				readButton.setDisable(false);
 			}
-			perspective.getLogController().log(deleteWorker.getValue().getLogHandler());
+			mode.getPerspective().getLogController().log(deleteWorker.getValue().getLogHandler());
 			
 			setDisablesForOperationCompletion();
 		});

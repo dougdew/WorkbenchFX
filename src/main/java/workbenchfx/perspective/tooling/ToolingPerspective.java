@@ -45,6 +45,11 @@ public class ToolingPerspective implements Perspective {
 		return root;
 	}
 	
+	public Node getModeToolBarRoot() {
+		// TODO
+		return null;
+	}
+	
 	public void captureLog() {
 		addLogToGraph();
 	}
