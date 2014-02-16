@@ -29,7 +29,7 @@ import com.sforce.ws.ConnectionException;
 
 import workbenchfx.SOAPLogHandler;
 
-public class DescribeAndListController {
+public class NavigatorController {
 	
 	private static class DescribeWorkerResults {
 		
@@ -294,7 +294,7 @@ public class DescribeAndListController {
 	private Button deleteButton;
 	private Button cancelButton;
 	
-	public DescribeAndListController(MetadataPerspective perspective) {
+	public NavigatorController(MetadataPerspective perspective) {
 		this.perspective = perspective;
 		createGraph();
 		perspective.getApplication().metadataConnection().addListener((o, oldValue, newValue) -> handleMetadataConnectionChanged());

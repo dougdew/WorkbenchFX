@@ -13,7 +13,7 @@ public class MetadataPerspective implements Perspective {
 	
 	private Main application;
 	
-	private DescribeAndListController describeAndListController;
+	private NavigatorController navigatorController;
 	private PropertiesController propertiesController;
 	private EditorController editorController;
 	private LogController logController;
@@ -37,8 +37,8 @@ public class MetadataPerspective implements Perspective {
 		return application;
 	}
 	
-	public DescribeAndListController getDescribeAndListController() {
-		return describeAndListController;
+	public NavigatorController getNavigatorController() {
+		return navigatorController;
 	}
 	
 	public PropertiesController getPropertiesController() {
@@ -80,8 +80,8 @@ public class MetadataPerspective implements Perspective {
 		mainLeftPane.getChildren().add(leftSplitPane);
 		
 		// Describe and list pane
-		describeAndListController = new DescribeAndListController(this);
-		Node describeAndListGraphRoot = describeAndListController.getRoot();
+		navigatorController = new NavigatorController(this);
+		Node describeAndListGraphRoot = navigatorController.getRoot();
 		AnchorPane.setTopAnchor(describeAndListGraphRoot, 0.0);
 		AnchorPane.setBottomAnchor(describeAndListGraphRoot, 0.0);
 		AnchorPane.setLeftAnchor(describeAndListGraphRoot, 0.0);
