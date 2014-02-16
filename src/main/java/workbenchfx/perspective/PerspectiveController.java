@@ -117,7 +117,9 @@ public class PerspectiveController {
 	
 	private void handlePerspectiveToggleChanged() {
 		ToggleButton selectedButton = (ToggleButton)perspectiveGroup.getSelectedToggle();
-		setActivePerspective(perspectiveTypes.get(selectedButton.getText()));
+		if (selectedButton != null) {
+			setActivePerspective(perspectiveTypes.get(selectedButton.getText()));
+		}
 	}
 	
 	private void setActivePerspective(PerspectiveFactory.Type perspectiveType) {
