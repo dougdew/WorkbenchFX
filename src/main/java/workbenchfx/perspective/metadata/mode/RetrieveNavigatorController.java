@@ -190,9 +190,10 @@ public class RetrieveNavigatorController {
 	}
 	
 	public void addRetrieve(String name, Map<String, SortedMap<String, FileProperties>> properties, TreeItem<String> tree) {
+		
 		retrievesProperties.put(name, properties);
-		tree.setExpanded(true);
 		retrievesTree.getRoot().getChildren().add(tree);
+		tree.setExpanded(true);
 		
 		retrievesPane.setExpanded(true);
 	}
@@ -228,6 +229,18 @@ public class RetrieveNavigatorController {
 		cancelButton.setDisable(true);
 		toolBar.getItems().add(cancelButton);
 		
+		retrievesTree = new TreeView<>();
+		retrievesTree.setShowRoot(false);
+		retrievesTree.setOnMouseClicked(e -> handleRetrievesTreeItemClicked(e));
+		
+		retrievesTreeRoot = new TreeItem<>("");
+		retrievesTreeRoot.setExpanded(true);
+		retrievesTree.setRoot(retrievesTreeRoot);
+		
+		retrievesPane = new TitledPane("Retrieves", retrievesTree);
+		retrievesPane.expandedProperty().addListener(e -> setDisablesForRetrievesTreeSelection());
+		accordion.getPanes().add(retrievesPane);
+		
 		orgTree = new TreeView<>();
 		orgTree.setCellFactory(CheckBoxTreeCell.<String>forTreeView());
 		orgTree.setShowRoot(false);
@@ -246,18 +259,6 @@ public class RetrieveNavigatorController {
 		orgPane = new TitledPane("Org", orgTree);
 		orgPane.expandedProperty().addListener(e -> setDisablesForOrgTreeSelection());
 		accordion.getPanes().add(orgPane);
-		
-		retrievesTree = new TreeView<>();
-		retrievesTree.setShowRoot(false);
-		retrievesTree.setOnMouseClicked(e -> handleRetrievesTreeItemClicked(e));
-		
-		retrievesTreeRoot = new TreeItem<>("");
-		retrievesTreeRoot.setExpanded(true);
-		retrievesTree.setRoot(retrievesTreeRoot);
-		
-		retrievesPane = new TitledPane("Retrieves", retrievesTree);
-		orgPane.expandedProperty().addListener(e -> setDisablesForRetrievesTreeSelection());
-		accordion.getPanes().add(retrievesPane);
 	}
 	
 	private void handleDescribeButtonClicked(ActionEvent e) {

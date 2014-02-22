@@ -14,6 +14,7 @@ import javafx.scene.control.TextArea;
 
 import com.sforce.soap.metadata.Metadata;
 import com.sforce.ws.ConnectionException;
+import com.sforce.ws.bind.TypeInfo;
 import com.sforce.ws.bind.TypeMapper;
 import com.sforce.ws.parser.PullParserException;
 import com.sforce.ws.parser.XmlInputStream;
@@ -24,7 +25,8 @@ import workbenchfx.Main;
 
 public class DefaultEditor implements Editor {
 	
-	private static String METADATA_XML_ELEMENT_NAME = "Metadata";
+	private static String METADATA_NAME = "Metadata";
+	private static String METADATA_STUBS_PACKAGE = "com.sforce.soap.metadata";
 	
 	private Metadata metadata;
 	private TextArea root;
@@ -58,8 +60,7 @@ public class DefaultEditor implements Editor {
 	public void setMetadataAsXml(String xml) {
 		root.appendText(xml);
 		root.setScrollTop(0.0);
-		
-		// TODO: Determine what to do about metadata
+		setMetadataFromUI();
 	}
 	
 	public BooleanProperty dirty() {
@@ -102,7 +103,7 @@ public class DefaultEditor implements Editor {
 		        xout.setPrefix("xsi", Constants.SCHEMA_INSTANCE_NS);
 		        xout.setPrefix("", Main.getMetadataNamespace());
 		        
-		        metadata.write(new QName(Main.getMetadataNamespace(), METADATA_XML_ELEMENT_NAME), xout, new TypeMapper());
+		        metadata.write(new QName(Main.getMetadataNamespace(), METADATA_NAME), xout, new TypeMapper());
 		        
 		        xout.close();
 		        
@@ -123,25 +124,43 @@ public class DefaultEditor implements Editor {
 	
 	private void setMetadataFromUI() {
 		
-		if (metadata != null) {
-			 
-			try {
-				String xml = root.getText();
-				
-				XmlInputStream xin = new XmlInputStream();
-				xin.setInput(new ByteArrayInputStream(xml.getBytes(Charset.forName("UTF-8"))), "UTF-8");
-				
-				metadata.load(xin, new TypeMapper());
+		try {
+			String xml = root.getText();
+			
+			XmlInputStream xin = new XmlInputStream();
+			xin.setInput(new ByteArrayInputStream(xml.getBytes(Charset.forName("UTF-8"))), "UTF-8");
+			
+			TypeMapper mapper = new TypeMapper();
+			
+			if (metadata != null) {
+				metadata.load(xin, mapper);
 			}
-			catch (PullParserException e) {
-				e.printStackTrace();
+			else {
+				TypeInfo typeInfo = new TypeInfo(Main.getMetadataNamespace(), 
+												 METADATA_NAME, 
+											     Main.getMetadataNamespace(), 
+											     METADATA_NAME, 
+											     0, 
+											     1, 
+											     true);
+				xin.peekTag();
+				String rootElementName = xin.getName();
+				String rootElementJavaClassName = METADATA_STUBS_PACKAGE + "." + rootElementName;
+				Class<?> rootElementJavaClass = Class.forName(rootElementJavaClassName);
+				metadata = (Metadata)mapper.readObject(xin, typeInfo, rootElementJavaClass);
 			}
-			catch (ConnectionException e) {
-				e.printStackTrace();
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			} 	
 		}
+		catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		catch (PullParserException e) {
+			e.printStackTrace();
+		}
+		catch (ConnectionException e) {
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		} 
 	}
 }
