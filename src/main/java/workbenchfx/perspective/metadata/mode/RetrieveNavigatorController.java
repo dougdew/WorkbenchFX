@@ -501,27 +501,32 @@ public class RetrieveNavigatorController {
 		TreeItem<String> selectedItem = retrievesTree.getSelectionModel().getSelectedItem();
 		if (selectedItem == null) {
 			// Should never get here
+			mode.getPropertiesViewerController().showPropertiesForFile(null);
 			return;
 		}
 		
 		if (selectedItem == retrievesTree.getRoot()) {
 			// Root of retrieves tree is hidden
+			mode.getPropertiesViewerController().showPropertiesForFile(null);
 			return;
 		}
 		
 		if (selectedItem.getParent() == retrievesTree.getRoot()) {
 			// This is the root of a single retrieve
+			mode.getPropertiesViewerController().showPropertiesForFile(null);
 			return;
 		}
 		
 		if (selectedItem.getParent().getParent() == retrievesTree.getRoot()) {
 			// This is a type for a single retrieve
+			mode.getPropertiesViewerController().showPropertiesForFile(null);
 			return;
 		}
 		
 		if (!selectedItem.isLeaf()) {
 			// Playing it safe. This is still a work in progress and the structure of the tree
 			// is still in development
+			mode.getPropertiesViewerController().showPropertiesForFile(null);
 			return;
 		}
 		

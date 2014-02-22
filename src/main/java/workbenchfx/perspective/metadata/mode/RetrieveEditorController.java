@@ -148,8 +148,6 @@ public class RetrieveEditorController {
 				// TODO: Handle server package
 				retrieveRequest.setUnpackaged(pkg);
 				
-				System.out.println("1");
-				
 				AsyncResult asyncResult = connection.retrieve(retrieveRequest);
 				
 				// This is the retrieve request xml that we want to report to the user.
@@ -162,11 +160,7 @@ public class RetrieveEditorController {
 				asyncResult = waitForCompletionOfRetrieve(asyncResult);
 				workerResults.setAsyncResult(asyncResult);
 				
-				System.out.println("3");
-				
 				if (asyncResult.getState() == AsyncRequestState.Completed) {
-					
-					System.out.println("4");
 					
 					RetrieveResult retrieveResult = connection.checkRetrieveStatus(asyncResult.getId());
 					workerResults.setRetrieveResult(retrieveResult);
@@ -175,8 +169,6 @@ public class RetrieveEditorController {
 					// to the user to go along with the response xml for the checkRetrieveStatus
 					// call.
 					logHandler.setRequest(requestLog);
-					
-					System.out.println("4a");
 					
 					Map<String, SortedMap<String, FileProperties>> filePropertiesMap = createFilePropertiesMap(retrieveResult.getFileProperties());
 					workerResults.setFileProperties(filePropertiesMap);
@@ -187,8 +179,6 @@ public class RetrieveEditorController {
 					Map<String, String> filesMap = createFilesMap(retrieveResult.getZipFile());
 					workerResults.setFiles(filesMap);
 				}
-				
-				System.out.println("7");
 				
 				connection.getConfig().clearMessageHandlers();
 			}
@@ -223,7 +213,6 @@ public class RetrieveEditorController {
 			int poll = 0;
 			long waitTimeMilliSecs = 1000;
 			while (!asyncResult.isDone()) {
-				System.out.println("2");
 				Thread.sleep(waitTimeMilliSecs);
 				waitTimeMilliSecs *= 2;
 				poll++;
@@ -275,13 +264,9 @@ public class RetrieveEditorController {
 			ByteArrayInputStream bais = new ByteArrayInputStream(zip);
 			ZipInputStream zis = new ZipInputStream(bais);
 			
-			System.out.println("5");
-			
 			ZipEntry ze = zis.getNextEntry();
 			while (ze != null) {
-				System.out.println("6");
 				String fileName = ze.getName();
-				System.out.println(fileName);
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				byte[] buffer = new byte[1024];
 				int bytesRead;
