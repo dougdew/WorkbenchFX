@@ -56,7 +56,10 @@ public class DefaultEditor implements Editor {
 	}
 	
 	public void setMetadataAsXml(String xml) {
-		// TODO:
+		root.appendText(xml);
+		root.setScrollTop(0.0);
+		
+		// TODO: Determine what to do about metadata
 	}
 	
 	public BooleanProperty dirty() {
@@ -69,6 +72,14 @@ public class DefaultEditor implements Editor {
 	
 	public void unlock() {
 		root.setDisable(false);
+	}
+	
+	public void setEditable(boolean editable) {
+		root.setEditable(editable);
+	}
+	
+	public boolean isEditable() {
+		return root.isEditable();
 	}
 	
 	private void createGraph() {

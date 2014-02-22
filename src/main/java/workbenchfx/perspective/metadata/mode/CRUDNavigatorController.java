@@ -290,6 +290,7 @@ public class CRUDNavigatorController {
 	private Button describeButton;
 	private Button listButton;
 	private Button readButton;
+	private Button renameButton;
 	private Button deleteButton;
 	private Button cancelButton;
 	
@@ -329,6 +330,11 @@ public class CRUDNavigatorController {
 		readButton.setOnAction(e -> handleReadButtonClicked(e));
 		toolBar.getItems().add(readButton);
 		
+		renameButton = new Button("Rename");
+		renameButton.setDisable(true);
+		renameButton.setOnAction(e -> handleRenameButtonClicked(e));
+		toolBar.getItems().add(renameButton);
+		
 		deleteButton = new Button("Delete");
 		deleteButton.setDisable(true);
 		deleteButton.setOnAction(e -> handleDeleteButtonClicked(e));
@@ -340,15 +346,23 @@ public class CRUDNavigatorController {
 		
 		descriptionAndListsTree = new TreeView<>();
 		descriptionAndListsTree.setCellFactory(TextFieldTreeCell.forTreeView());
+		descriptionAndListsTree.setShowRoot(false);
 		descriptionAndListsTree.setOnMouseClicked(e -> handleTreeItemClicked(e));
 		descriptionAndListsTree.setOnEditCommit(e -> handleTreeItemEdited(e));
+		descriptionAndListsTree.setOnEditCancel(e -> handleTreeItemEditCancelled(e));
 		AnchorPane.setTopAnchor(descriptionAndListsTree, 38.0);
 		AnchorPane.setBottomAnchor(descriptionAndListsTree, 0.0);
 		AnchorPane.setLeftAnchor(descriptionAndListsTree, 0.0);
 		AnchorPane.setRightAnchor(descriptionAndListsTree, 0.0);
 		root.getChildren().add(descriptionAndListsTree);
 		
-		descriptionAndListsTreeRoot = new TreeItem<>("");
+		String treeRootText = "";
+		GetUserInfoResult uir = mode.getPerspective().getApplication().userInfo().get();
+		if (uir != null) {
+			treeRootText = uir.getOrganizationName();
+			descriptionAndListsTree.setShowRoot(true);
+		}
+		descriptionAndListsTreeRoot = new TreeItem<>(treeRootText);
 		descriptionAndListsTree.setRoot(descriptionAndListsTreeRoot);
 		descriptionAndListsTreeRoot.setExpanded(true);
 	}
@@ -362,6 +376,7 @@ public class CRUDNavigatorController {
 			describeButton.setDisable(true);
 			listButton.setDisable(true);
 			readButton.setDisable(true);
+			renameButton.setDisable(true);
 			deleteButton.setDisable(true);
 		}
 	}
@@ -373,23 +388,54 @@ public class CRUDNavigatorController {
 		}
 		metadataLists.clear();
 		
-		descriptionAndListsTreeRoot.setValue(newValue.getOrganizationName());
-		descriptionAndListsTree.getSelectionModel().select(descriptionAndListsTreeRoot);
+		if (newValue != null) {
+			descriptionAndListsTreeRoot.setValue(newValue.getOrganizationName());
+			descriptionAndListsTree.setShowRoot(true);
+			descriptionAndListsTree.getSelectionModel().select(descriptionAndListsTreeRoot);
+		}
+		else {
+			descriptionAndListsTreeRoot.setValue("");
+			descriptionAndListsTree.setShowRoot(false);
+		}
 		
 		setDisablesForTreeSelection();
 		showPropertiesForTreeSelection();
 	}
 	
 	private void handleTreeItemClicked(MouseEvent e) {
-		setEditableForTreeSelection();
 		setDisablesForTreeSelection();
 		showPropertiesForTreeSelection();
+		
+		if (e.getClickCount() == 2) {
+			
+			TreeItem<String> selectedItem = descriptionAndListsTree.getSelectionModel().getSelectedItem();
+			if (selectedItem == null) {
+				// Should never get here
+				return;
+			}
+			
+			if (selectedItem == descriptionAndListsTree.getRoot()) {
+				return;
+			}
+			
+			if (selectedItem.getParent() == descriptionAndListsTree.getRoot()) {
+				return;
+			}
+			
+			boolean connected = mode.getPerspective().getApplication().metadataConnection().get() != null;
+			if (connected) {
+				String typeName = selectedItem.getParent().getValue();
+				String fullName = selectedItem.getValue();
+				mode.getEditorController().edit(typeName, fullName);
+			}
+		}
 	}
 	
 	private void setDisablesForTreeSelection() {
 		
 		TreeItem<String> selectedItem = descriptionAndListsTree.getSelectionModel().getSelectedItem();
 		if (selectedItem == null) {
+			// Should never get here
 			return;
 		}
 		
@@ -401,6 +447,7 @@ public class CRUDNavigatorController {
 			}
 			listButton.setDisable(true);
 			readButton.setDisable(true);
+			renameButton.setDisable(true);
 			deleteButton.setDisable(true);
 		}
 		else if (selectedItem.getParent() == descriptionAndListsTree.getRoot()) {
@@ -409,6 +456,7 @@ public class CRUDNavigatorController {
 				listButton.setDisable(false);
 			}
 			readButton.setDisable(true);
+			renameButton.setDisable(true);
 			deleteButton.setDisable(true);
 		}
 		else {
@@ -416,22 +464,9 @@ public class CRUDNavigatorController {
 			listButton.setDisable(true);
 			if (connected) {
 				readButton.setDisable(false);
+				renameButton.setDisable(false);
 				deleteButton.setDisable(false);
 			}
-		}
-	}
-	
-	private void setEditableForTreeSelection() {
-		TreeItem<String> selectedItem = descriptionAndListsTree.getSelectionModel().getSelectedItem();
-		if (selectedItem == null) {
-			return;
-		}
-		if (selectedItem == descriptionAndListsTree.getRoot() ||
-		    selectedItem.getParent() == descriptionAndListsTree.getRoot()) {
-			descriptionAndListsTree.setEditable(false);
-		}
-		else {
-			descriptionAndListsTree.setEditable(true);
 		}
 	}
 	
@@ -444,9 +479,7 @@ public class CRUDNavigatorController {
 	
 	private void setDisablesForOperationCancellation() {
 		cancelButton.setDisable(true);
-		// TODO:
-		// TODO:
-		// TODO:
+		setDisablesForTreeSelection();
 	}
 	
 	private void showPropertiesForTreeSelection() {
@@ -507,6 +540,8 @@ public class CRUDNavigatorController {
 				list.put(newFullName, fp);
 				
 				mode.getPropertiesViewerController().showPropertiesForFile(fp);
+				
+				descriptionAndListsTree.setEditable(false);
 			}
 			else {
 				editedItem.setValue(oldFullName);
@@ -524,6 +559,12 @@ public class CRUDNavigatorController {
 		cancelButton.setDisable(false);
 		
 		new Thread(renameWorker).start();
+	}
+	
+	private void handleTreeItemEditCancelled(EditEvent<String> e) {
+		
+		descriptionAndListsTree.setEditable(false);
+		setDisablesForTreeSelection();
 	}
 	
 	private void handleDescribeButtonClicked(ActionEvent e) {
@@ -604,6 +645,18 @@ public class CRUDNavigatorController {
 		String fullName = selectedItem.getValue();
 		
 		mode.getEditorController().edit(typeName, fullName);
+	}
+	
+	private void handleRenameButtonClicked(ActionEvent e) {
+		
+		readButton.setDisable(true);
+		renameButton.setDisable(true);
+		deleteButton.setDisable(true);
+		
+		TreeItem<String> selectedItem = descriptionAndListsTree.getSelectionModel().getSelectedItem();
+		
+		descriptionAndListsTree.setEditable(true);
+		descriptionAndListsTree.edit(selectedItem);
 	}
 	
 	private void handleDeleteButtonClicked(ActionEvent e) {

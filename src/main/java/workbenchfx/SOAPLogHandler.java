@@ -11,7 +11,8 @@ public class SOAPLogHandler implements LogMessage, MessageHandler {
 	String title;
 	String url;
 	String summary;
-	String details;
+	String request;
+	String response;
 	
 	public String getTitle() {
 		return title;
@@ -34,19 +35,26 @@ public class SOAPLogHandler implements LogMessage, MessageHandler {
 		this.summary = summary;
 	}
 	
-	public String getDetails() {
-		return details;
+	public String getRequest() {
+		return request;
 	}
-	public void setDetails(String details) {
-		this.details = details;
+	public void setRequest(String request) {
+		this.request = request;
+	}
+	
+	public String getResponse() {
+		return response;
+	}
+	public void setResponse(String response) {
+		this.response = response;
 	}
 
 	public void handleRequest(URL endpoint, byte[] request) {
-		// TODO Auto-generated method stub		
+		url = endpoint.toString();
+		this.request = new String(request);
 	}
 
 	public void handleResponse(URL endpoint, byte[] response) {
-		url = endpoint.toString();
-		details = new String(response);
+		this.response = new String(response);
 	}
 }

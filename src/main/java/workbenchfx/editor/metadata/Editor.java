@@ -21,4 +21,7 @@ public interface Editor {
 	// objects instead of locking their editors.
 	void lock();
 	void unlock();
+	
+	void setEditable(boolean editable);
+	boolean isEditable();
 }

@@ -31,7 +31,8 @@ public class LogController {
 		String getTitle();
 		String getUrl();
 		String getSummary();
-		String getDetails();
+		String getRequest();
+		String getResponse();
 	}
 	
 	public static class LogRow {
@@ -80,9 +81,18 @@ public class LogController {
 		TreeItem<LogRow> summaryRow = new TreeItem<>(new LogRow(title, summary));
 		treeTableViewRoot.getChildren().add(summaryRow);
 		
-		if (message.getDetails() != null) {
-			TreeItem<LogRow> detailsRow = new TreeItem<>(new LogRow("", prettyFormat(message.getDetails())));
-			summaryRow.getChildren().add(detailsRow);
+		if (message.getRequest() != null) {
+			TreeItem<LogRow> requestRow = new TreeItem<>(new LogRow("    Request", "")); // TODO Add date/time
+			summaryRow.getChildren().add(requestRow);
+			TreeItem<LogRow> requestDetailsRow = new TreeItem<>(new LogRow("", prettyFormat(message.getRequest())));
+			requestRow.getChildren().add(requestDetailsRow);
+		}
+		
+		if (message.getResponse() != null) {
+			TreeItem<LogRow> responseRow = new TreeItem<>(new LogRow("    Response", "")); // TODO Add date/time
+			summaryRow.getChildren().add(responseRow);
+			TreeItem<LogRow> responseDetailsRow = new TreeItem<>(new LogRow("", prettyFormat(message.getResponse())));
+			responseRow.getChildren().add(responseDetailsRow);
 		}
 		
 		clearButton.setDisable(false);

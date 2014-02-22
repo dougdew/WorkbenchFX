@@ -234,6 +234,7 @@ public class CRUDEditorController {
 		private Tab tab;
 		private Editor editor;
 		private Metadata metadata;
+		private boolean newFlag;
 		
 		public String getType() {
 			return type;
@@ -271,15 +272,19 @@ public class CRUDEditorController {
 		}
 		
 		public boolean isNew() {
-			return metadata == null;
+			return newFlag;
+		}
+		public void setNew(boolean newFlag) {
+			this.newFlag = newFlag;
 		}
 	}
 	
-	private static int newFileCounter = 1;
-	
 	private CRUDMode mode;
 	
-	private Map<String, FileController> fileControllers = new HashMap<String, FileController>();
+	private Map<String, FileController> fileControllersByName = new HashMap<String, FileController>();
+	private int newFileCounter = 1;
+	
+	private Map<Tab, FileController> fileControllersByTab = new HashMap<Tab, FileController>();
 	
 	private AnchorPane root;
 	private ToolBar toolBar;
@@ -302,20 +307,22 @@ public class CRUDEditorController {
 	
 	public void edit(String type, String fullName) {
 		
-		if (fileControllers.get(fullName) != null) {
-			tabPane.getSelectionModel().select(fileControllers.get(fullName).getTab());
+		if (fileControllersByName.get(fullName) != null) {
+			tabPane.getSelectionModel().select(fileControllersByName.get(fullName).getTab());
 			return;
 		}
 		
 		final FileController fileController = new FileController();
 		fileController.setType(type);
 		fileController.setFullName(fullName);
+		fileController.setNew(false);
 		
 		Tab tab = new Tab();
 		tab.setText(fullName);
 		tab.setOnSelectionChanged(e -> setDisablesForTabSelection());
 		tab.setOnClosed(e -> {
-			fileControllers.remove(fullName);
+			fileControllersByName.remove(fullName);
+			fileControllersByTab.remove(tab);
 			setDisablesForTabSelection();
 		});
 		fileController.setTab(tab);
@@ -335,7 +342,8 @@ public class CRUDEditorController {
 			setDisablesForOperationCompletion();
 		});	
 		
-		fileControllers.put(fullName, fileController);
+		fileControllersByName.put(fullName, fileController);
+		fileControllersByTab.put(tab, fileController);
 		
 		tabPane.getTabs().add(tab);
 		tabPane.getSelectionModel().select(tab);
@@ -353,13 +361,15 @@ public class CRUDEditorController {
 	
 	public void close(String type, String fullName) {	
 		
-		FileController fileController = fileControllers.get(fullName);
+		FileController fileController = fileControllersByName.get(fullName);
 		if (fileController == null) {
 			return;
 		}
 		
-		tabPane.getTabs().remove(fileController.getTab());
-		fileControllers.remove(fullName);
+		Tab tab = fileController.getTab();
+		tabPane.getTabs().remove(tab);
+		fileControllersByName.remove(fullName);
+		fileControllersByTab.remove(tab);
 		
 		setDisablesForTabSelection();
 		
@@ -368,7 +378,8 @@ public class CRUDEditorController {
 	
 	public void closeAll() {
 		tabPane.getTabs().clear();
-		fileControllers.clear();
+		fileControllersByName.clear();
+		fileControllersByTab.clear();
 		
 		setDisablesForTabSelection();
 		
@@ -417,12 +428,7 @@ public class CRUDEditorController {
 	
 	private void handleMetadataConnectionChanged() {
 		
-		if (mode.getPerspective().getApplication().metadataConnection().get() != null) {
-		}
-		else {
-			createButton.setDisable(true);
-			updateButton.setDisable(true);
-		}
+		setDisablesForTabSelection();
 	}
 	
 	private void handleUserInfoChanged(GetUserInfoResult oldValue, GetUserInfoResult newValue) {
@@ -435,12 +441,14 @@ public class CRUDEditorController {
 		newFileCounter++;
 		
 		final FileController fileController = new FileController();
+		fileController.setNew(true);
 		
 		Tab tab = new Tab();
 		tab.setText(newFileName);
 		tab.setOnSelectionChanged(es -> setDisablesForTabSelection());
 		tab.setOnClosed(ec -> {
-			fileControllers.remove(newFileName);
+			fileControllersByName.remove(newFileName);
+			fileControllersByTab.remove(tab);
 			setDisablesForTabSelection();
 		});
 		fileController.setTab(tab);
@@ -451,7 +459,8 @@ public class CRUDEditorController {
 		tab.setContent(editor.getRoot());
 		fileController.setEditor(editor);
 		
-		fileControllers.put(newFileName, fileController);
+		fileControllersByName.put(newFileName, fileController);
+		fileControllersByTab.put(tab, fileController);
 		
 		tabPane.getTabs().add(tab);
 		tabPane.getSelectionModel().select(tab);
@@ -468,8 +477,8 @@ public class CRUDEditorController {
 		createButton.setDisable(true);
 		updateButton.setDisable(true);
 		
-		String newFileName = tabPane.getSelectionModel().getSelectedItem().getText();
-		FileController fileController = fileControllers.get(newFileName);
+		Tab tab = tabPane.getSelectionModel().getSelectedItem();
+		FileController fileController = fileControllersByTab.get(tab);
 		Editor editor = fileController.getEditor();
 		
 		if (!fileController.isNew() || !editor.dirty().get()) {
@@ -482,15 +491,20 @@ public class CRUDEditorController {
 		final CreateWorker createWorker = new CreateWorker(mode.getPerspective().getApplication().metadataConnection().get(), xml);
 		createWorker.setOnSucceeded(es -> {
 			mode.getPerspective().getLogController().log(createWorker.getValue().getLogHandler());
-			cancelButton.setDisable(true);
 			boolean created = createWorker.getValue().getSuccess();
 			if (created) {
-				fileControllers.remove(newFileName);
+				fileControllersByName.remove(fileController.getFullName());
 				Metadata metadata = createWorker.getValue().getMetadata();
 				String fullName = metadata.getFullName();
-				fileController.getTab().setText(fullName);
-				fileControllers.put(fullName, fileController);
+				fileControllersByName.put(fullName, fileController);
+				fileController.setNew(false);
 				editor.setMetadata(metadata);
+				tab.setText(fullName);
+				tab.setOnClosed(ec -> {
+					fileControllersByName.remove(fullName);
+					fileControllersByTab.remove(tab);
+					setDisablesForTabSelection();
+				});
 			}
 			editor.unlock();
 			setDisablesForOperationCompletion();
@@ -514,8 +528,8 @@ public class CRUDEditorController {
 		createButton.setDisable(true);
 		updateButton.setDisable(true);
 		
-		String fullName = tabPane.getSelectionModel().getSelectedItem().getText();
-		FileController fileController = fileControllers.get(fullName);
+		Tab tab = tabPane.getSelectionModel().getSelectedItem();
+		FileController fileController = fileControllersByTab.get(tab);
 		Editor editor = fileController.getEditor();
 		
 		if (!editor.dirty().get()) {
@@ -565,8 +579,7 @@ public class CRUDEditorController {
 			boolean connected = mode.getPerspective().getApplication().metadataConnection().get() != null;
 			
 			Tab tab = tabPane.getSelectionModel().getSelectedItem();
-			String fileName = tab.getText();
-			FileController fileController = fileControllers.get(fileName);
+			FileController fileController = fileControllersByTab.get(tab);
 			Editor editor = fileController.getEditor();
 			if (fileController.isNew()) {
 				if (editor.dirty().get() && connected) {

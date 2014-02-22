@@ -11,8 +11,6 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.HBox;
 
-import com.sforce.soap.enterprise.GetUserInfoResult;
-
 import workbenchfx.Main;
 
 public class PerspectiveController {

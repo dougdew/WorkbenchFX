@@ -89,6 +89,15 @@ public class CustomObjectEditor implements Editor {
 		// TODO:
 	}
 	
+	public void setEditable(boolean editable) {
+		// TODO
+	}
+	
+	public boolean isEditable() {
+		// TODO
+		return false;
+	}
+	
 	private void loadGraph() {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource(GRAPH_FILE));
 		loader.setController(this);
