@@ -8,6 +8,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -25,7 +26,10 @@ public class Main extends Application {
 	private static final String METADATA_NAMESPACE = "http://soap.sforce.com/2006/04/metadata";
 	
 	private AnchorPane root;
-	private HBox toolBarBox;
+	private BorderPane toolBarPane;
+	private HBox toolBarLeftBox;
+	private Node loginToolBarRoot;
+	private Node perspectiveToolBarRoot;
 	private Node perspectiveRoot;
 	private Node perspectiveModeToolBarRoot;
 	
@@ -102,21 +106,28 @@ public class Main extends Application {
 		scene.getStylesheets().add(getClass().getResource(CSS_FILE).toExternalForm());
 		
 		// Toolbar pane
-		toolBarBox = new HBox();
-		AnchorPane.setTopAnchor(toolBarBox, 0.0);
-		AnchorPane.setLeftAnchor(toolBarBox, 0.0);
-		root.getChildren().add(toolBarBox);
+		toolBarPane = new BorderPane();
+		AnchorPane.setTopAnchor(toolBarPane, 0.0);
+		AnchorPane.setLeftAnchor(toolBarPane, 0.0);
+		AnchorPane.setRightAnchor(toolBarPane, 0.0);
+		root.getChildren().add(toolBarPane);
+		
+		// Toolbar left box
+		toolBarLeftBox = new HBox();
+		toolBarPane.setLeft(toolBarLeftBox);
 		
 		// Login toolbar
 		loginController = new LoginController(this);
-		Node loginGraphRoot = loginController.getRoot();
-		toolBarBox.getChildren().add(loginGraphRoot);
+		loginToolBarRoot = loginController.getRoot();
+		//toolBarPane.setLeft(loginToolBarRoot);
+		toolBarLeftBox.getChildren().add(loginToolBarRoot);
 		
 		// Perspective toolbar
 		perspectiveController = new PerspectiveController(this);
-		Node perspectiveToolBarRoot = perspectiveController.getToolBarRoot();
+		perspectiveToolBarRoot = perspectiveController.getToolBarRoot();
 		scene.getStylesheets().add(PerspectiveController.class.getResource(PerspectiveController.getCSSFileName()).toExternalForm());
-		toolBarBox.getChildren().add(perspectiveToolBarRoot);
+		toolBarPane.setCenter(perspectiveToolBarRoot);
+		
 		handlePerspectiveChanged();
 		perspectiveController.activePerspective().addListener(e -> handlePerspectiveChanged());
 		
@@ -131,7 +142,7 @@ public class Main extends Application {
 		}
 		
 		if (perspectiveModeToolBarRoot != null) {
-			toolBarBox.getChildren().remove(perspectiveModeToolBarRoot);
+			toolBarPane.getChildren().remove(perspectiveModeToolBarRoot);
 			perspectiveModeToolBarRoot = null;
 		}
 		
@@ -144,7 +155,14 @@ public class Main extends Application {
 		
 		perspectiveModeToolBarRoot = perspectiveController.getPerspectiveModeToolBarRoot();
 		if (perspectiveModeToolBarRoot != null) {
-			toolBarBox.getChildren().add(perspectiveModeToolBarRoot);
+			toolBarPane.setCenter(null);
+			toolBarLeftBox.getChildren().add(perspectiveToolBarRoot);
+			toolBarPane.setCenter(perspectiveModeToolBarRoot);
+		}
+		else {
+			toolBarPane.setCenter(null);
+			toolBarLeftBox.getChildren().remove(perspectiveToolBarRoot);
+			toolBarPane.setCenter(perspectiveToolBarRoot);
 		}
 	}
 }

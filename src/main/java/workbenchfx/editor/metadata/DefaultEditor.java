@@ -28,16 +28,23 @@ public class DefaultEditor implements Editor {
 	private static String METADATA_NAME = "Metadata";
 	private static String METADATA_STUBS_PACKAGE = "com.sforce.soap.metadata";
 	
+	private Main application;
+	
 	private Metadata metadata;
 	private TextArea root;
 	private BooleanProperty dirtyProperty = new SimpleBooleanProperty();
 	
-	public DefaultEditor() {
+	public DefaultEditor(Main application) {
+		this.application = application;
 		createGraph();
 	}
 
 	public Node getRoot() {
 		return root;
+	}
+	
+	public Node getToolBarRoot() {
+		return null;
 	}
 	
 	public Metadata getMetadata() {

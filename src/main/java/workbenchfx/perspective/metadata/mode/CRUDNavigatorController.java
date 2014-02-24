@@ -16,6 +16,7 @@ import javafx.scene.control.TreeView.EditEvent;
 import javafx.scene.control.cell.TextFieldTreeCell;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
 
 import com.sforce.soap.enterprise.GetUserInfoResult;
 import com.sforce.soap.metadata.DeleteResult;
@@ -284,6 +285,7 @@ public class CRUDNavigatorController {
 	private Map<String, SortedMap<String, FileProperties>> metadataLists = new TreeMap<>();
 	
 	private AnchorPane root;
+	private BorderPane toolBarPane;
 	private ToolBar toolBar;
 	private TreeView<String> descriptionAndListsTree;
 	private TreeItem<String> descriptionAndListsTreeRoot;
@@ -309,11 +311,14 @@ public class CRUDNavigatorController {
 		
 		root = new AnchorPane();
 		
+		toolBarPane = new BorderPane();
+		AnchorPane.setTopAnchor(toolBarPane, 0.0);
+		AnchorPane.setLeftAnchor(toolBarPane, 0.0);
+		AnchorPane.setRightAnchor(toolBarPane, 0.0);
+		root.getChildren().add(toolBarPane);
+		
 		toolBar = new ToolBar();
-		AnchorPane.setTopAnchor(toolBar, 0.0);
-		AnchorPane.setLeftAnchor(toolBar, 0.0);
-		AnchorPane.setRightAnchor(toolBar, 0.0);
-		root.getChildren().add(toolBar);
+		toolBarPane.setCenter(toolBar);
 			
 		describeButton = new Button("Describe");
 		describeButton.setDisable(true);

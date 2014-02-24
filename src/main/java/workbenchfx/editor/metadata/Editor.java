@@ -9,6 +9,8 @@ public interface Editor {
 
 	Node getRoot();
 	
+	Node getToolBarRoot();
+	
 	Metadata getMetadata();
 	void setMetadata(Metadata metadata);
 	
@@ -17,8 +19,6 @@ public interface Editor {
 	
 	BooleanProperty dirty();
 	
-	// TODO: Fix this. Should probably copy the metadata
-	// objects instead of locking their editors.
 	void lock();
 	void unlock();
 	

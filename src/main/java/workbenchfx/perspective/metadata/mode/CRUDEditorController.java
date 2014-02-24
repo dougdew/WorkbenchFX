@@ -15,6 +15,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
 
 import com.sforce.soap.enterprise.GetUserInfoResult;
 import com.sforce.soap.metadata.Metadata;
@@ -287,6 +288,7 @@ public class CRUDEditorController {
 	private Map<Tab, FileController> fileControllersByTab = new HashMap<Tab, FileController>();
 	
 	private AnchorPane root;
+	private BorderPane toolBarPane;
 	private ToolBar toolBar;
 	private Button newButton;
 	private Button createButton;
@@ -319,15 +321,15 @@ public class CRUDEditorController {
 		
 		Tab tab = new Tab();
 		tab.setText(fullName);
-		tab.setOnSelectionChanged(e -> setDisablesForTabSelection());
+		tab.setOnSelectionChanged(e -> handleTabSelection());
 		tab.setOnClosed(e -> {
 			fileControllersByName.remove(fullName);
 			fileControllersByTab.remove(tab);
-			setDisablesForTabSelection();
+			handleTabSelection();
 		});
 		fileController.setTab(tab);
 		
-		final Editor editor = EditorFactory.createEditor(type);
+		final Editor editor = EditorFactory.createEditor(type, mode.getPerspective().getApplication());
 		editor.dirty().addListener((o, oldValue, newValue) -> setDisablesForTabSelection());
 		tab.setContent(editor.getRoot());
 		fileController.setEditor(editor);
@@ -348,7 +350,7 @@ public class CRUDEditorController {
 		tabPane.getTabs().add(tab);
 		tabPane.getSelectionModel().select(tab);
 		
-		setDisablesForTabSelection();
+		handleTabSelection();
 		
 		cancelButton.setOnAction(ec -> {
 			readWorker.cancel();
@@ -371,7 +373,7 @@ public class CRUDEditorController {
 		fileControllersByName.remove(fullName);
 		fileControllersByTab.remove(tab);
 		
-		setDisablesForTabSelection();
+		handleTabSelection();
 		
 		// TODO: Special handling for zero remaining file controllers and tabs
 	}
@@ -381,7 +383,7 @@ public class CRUDEditorController {
 		fileControllersByName.clear();
 		fileControllersByTab.clear();
 		
-		setDisablesForTabSelection();
+		handleTabSelection();
 		
 		// TODO: Special handling for zero remaining file controllers and tabs
 	}
@@ -390,11 +392,14 @@ public class CRUDEditorController {
 		
 		root = new AnchorPane();
 		
+		toolBarPane = new BorderPane();
+		AnchorPane.setTopAnchor(toolBarPane, 0.0);
+		AnchorPane.setLeftAnchor(toolBarPane, 0.0);
+		AnchorPane.setRightAnchor(toolBarPane, 0.0);
+		root.getChildren().add(toolBarPane);
+		
 		toolBar = new ToolBar();
-		AnchorPane.setTopAnchor(toolBar, 0.0);
-		AnchorPane.setLeftAnchor(toolBar, 0.0);
-		AnchorPane.setRightAnchor(toolBar, 0.0);
-		root.getChildren().add(toolBar);
+		toolBarPane.setCenter(toolBar);
 		
 		newButton = new Button("New");
 		newButton.setOnAction(e -> handleNewButtonClicked(e));
@@ -445,16 +450,15 @@ public class CRUDEditorController {
 		
 		Tab tab = new Tab();
 		tab.setText(newFileName);
-		tab.setOnSelectionChanged(es -> setDisablesForTabSelection());
+		tab.setOnSelectionChanged(es -> handleTabSelection());
 		tab.setOnClosed(ec -> {
 			fileControllersByName.remove(newFileName);
 			fileControllersByTab.remove(tab);
-			setDisablesForTabSelection();
+			handleTabSelection();
 		});
 		fileController.setTab(tab);
 		
-		// TODO: Enable editor factory to handle null type
-		final Editor editor = EditorFactory.createEditor(null);
+		final Editor editor = EditorFactory.createEditor(null, mode.getPerspective().getApplication());
 		editor.dirty().addListener((o, oldValue, newValue) -> setDisablesForTabSelection());
 		tab.setContent(editor.getRoot());
 		fileController.setEditor(editor);
@@ -465,7 +469,7 @@ public class CRUDEditorController {
 		tabPane.getTabs().add(tab);
 		tabPane.getSelectionModel().select(tab);
 		
-		setDisablesForTabSelection();
+		handleTabSelection();
 	}
 	
 	private void handleCreateButtonClicked(ActionEvent e) {
@@ -503,7 +507,7 @@ public class CRUDEditorController {
 				tab.setOnClosed(ec -> {
 					fileControllersByName.remove(fullName);
 					fileControllersByTab.remove(tab);
-					setDisablesForTabSelection();
+					handleTabSelection();
 				});
 			}
 			editor.unlock();
@@ -600,6 +604,15 @@ public class CRUDEditorController {
 				createButton.setDisable(true);
 			}
 		}
+	}
+	
+	private void handleTabSelection() {
+		setToolBarForTabSelection();
+		setDisablesForTabSelection();
+	}
+	
+	private void setToolBarForTabSelection() {
+		// TODO
 	}
 	
 	private void setDisablesForOperationCompletion() {

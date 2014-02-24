@@ -14,13 +14,21 @@ import javafx.scene.layout.AnchorPane;
 import com.sforce.soap.metadata.CustomObject;
 import com.sforce.soap.metadata.Metadata;
 
+import workbenchfx.Main;
+
 public class CustomObjectEditor implements Editor {
 
 	private static final String GRAPH_FILE = "CustomObjectEditor.fxml";
 	private static final String TYPE = "CustomObject";
 	private static final String FILE_EXTENSION = "object";
 	
+	private Main application;
+	
 	private BooleanProperty dirtyProperty = new SimpleBooleanProperty();
+	
+	public CustomObjectEditor(Main application) {
+		this.application = application;
+	}
 	
 	public static String getType() {
 		return TYPE;
@@ -47,6 +55,10 @@ public class CustomObjectEditor implements Editor {
 	
 	public Node getRoot() {
 		return root;
+	}
+	
+	public Node getToolBarRoot() {
+		return null;
 	}
 	
 	public Metadata getMetadata() {

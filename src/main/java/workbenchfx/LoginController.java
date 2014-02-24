@@ -187,8 +187,6 @@ public class LoginController {
 			}		
 			application.enterpriseConnection().set(null);
 			application.metadataConnection().set(null);
-			
-			loginStatus.setFill(Color.RED);
 		}
 		catch (ConnectionException e) {
 			e.printStackTrace();
@@ -280,6 +278,7 @@ public class LoginController {
 		}
 		else {
 			logout();
+			loginStatus.setFill(Color.RED);
 			loginLogoutButton.setText("Log In");
 		}
 	}

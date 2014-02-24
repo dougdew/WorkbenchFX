@@ -18,10 +18,10 @@ public class MetadataPerspective implements Perspective {
 	private LogController logController;
 	
 	private SplitPane root;
-	private AnchorPane mainLeftPane;
-	private AnchorPane mainRightPane;
-	private SplitPane leftSplitPane;
-	private SplitPane rightSplitPane;
+	private AnchorPane mainLeftAnchorPane;
+	private AnchorPane mainRightAnchorPane;
+	private SplitPane leftPane;
+	private SplitPane rightPane;
 	private AnchorPane editorPane;
 	private AnchorPane logPane;
 	private Node logGraphRoot;
@@ -62,60 +62,31 @@ public class MetadataPerspective implements Perspective {
 		// Main split pane
 		root = new SplitPane();
 		root.setDividerPosition(0, 0.35);
-		mainLeftPane = new AnchorPane();
-		mainRightPane = new AnchorPane();
-		root.getItems().addAll(mainLeftPane, mainRightPane);
+		mainLeftAnchorPane = new AnchorPane();
+		mainRightAnchorPane = new AnchorPane();
+		root.getItems().addAll(mainLeftAnchorPane, mainRightAnchorPane);
 		
 		// Left pane
-		leftSplitPane = new SplitPane();
-		leftSplitPane.setOrientation(Orientation.VERTICAL);
-		AnchorPane.setTopAnchor(leftSplitPane, 0.0);
-		AnchorPane.setBottomAnchor(leftSplitPane, 0.0);
-		AnchorPane.setLeftAnchor(leftSplitPane, 0.0);
-		AnchorPane.setRightAnchor(leftSplitPane, 0.0);
-		mainLeftPane.getChildren().add(leftSplitPane);
+		leftPane = new SplitPane();
+		leftPane.setOrientation(Orientation.VERTICAL);
+		AnchorPane.setTopAnchor(leftPane, 0.0);
+		AnchorPane.setBottomAnchor(leftPane, 0.0);
+		AnchorPane.setLeftAnchor(leftPane, 0.0);
+		AnchorPane.setRightAnchor(leftPane, 0.0);
+		mainLeftAnchorPane.getChildren().add(leftPane);
 		
-		/*
-		// Navigator
-		navigatorController = new NavigatorController(this);
-		Node describeAndListGraphRoot = navigatorController.getRoot();
-		AnchorPane.setTopAnchor(describeAndListGraphRoot, 0.0);
-		AnchorPane.setBottomAnchor(describeAndListGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(describeAndListGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(describeAndListGraphRoot, 0.0);
-		leftSplitPane.getItems().add(describeAndListGraphRoot);
-		
-		// Properties pane
-		propertiesController = new PropertiesController(this);
-		Node propertiesGraphRoot = propertiesController.getRoot();
-		AnchorPane.setTopAnchor(propertiesGraphRoot, 0.0);
-		AnchorPane.setBottomAnchor(propertiesGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(propertiesGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(propertiesGraphRoot, 0.0);
-		leftSplitPane.getItems().add(propertiesGraphRoot);*/
-		
-		// Right split pane
-		rightSplitPane = new SplitPane();
-		rightSplitPane.setOrientation(Orientation.VERTICAL);
-		rightSplitPane.setDividerPosition(0, 0.6);
-		AnchorPane.setTopAnchor(rightSplitPane, 0.0);
-		AnchorPane.setBottomAnchor(rightSplitPane, 0.0);
-		AnchorPane.setLeftAnchor(rightSplitPane, 0.0);
-		AnchorPane.setRightAnchor(rightSplitPane, 0.0);
-		mainRightPane.getChildren().add(rightSplitPane);
+		// Right pane
+		rightPane = new SplitPane();
+		rightPane.setOrientation(Orientation.VERTICAL);
+		rightPane.setDividerPosition(0, 0.6);
+		AnchorPane.setTopAnchor(rightPane, 0.0);
+		AnchorPane.setBottomAnchor(rightPane, 0.0);
+		AnchorPane.setLeftAnchor(rightPane, 0.0);
+		AnchorPane.setRightAnchor(rightPane, 0.0);
+		mainRightAnchorPane.getChildren().add(rightPane);
 		editorPane = new AnchorPane();
 		logPane = new AnchorPane();
-		rightSplitPane.getItems().addAll(editorPane, logPane);
-		
-		/*
-		// Editor pane
-		editorController = new EditorController(this);
-		Node editorGraphRoot = editorController.getRoot();
-		AnchorPane.setTopAnchor(editorGraphRoot, 0.0);
-		AnchorPane.setBottomAnchor(editorGraphRoot, 0.0);
-		AnchorPane.setLeftAnchor(editorGraphRoot, 0.0);
-		AnchorPane.setRightAnchor(editorGraphRoot, 0.0);
-		editorPane.getChildren().add(editorGraphRoot);*/
+		rightPane.getItems().addAll(editorPane, logPane);
 		
 		handleModeChanged();
 		modeController.activeMode().addListener(e -> handleModeChanged());
@@ -139,12 +110,12 @@ public class MetadataPerspective implements Perspective {
 	private void handleModeChanged() {
 		
 		if (navigatorRoot != null) {
-			leftSplitPane.getItems().remove(navigatorRoot);
+			leftPane.getItems().remove(navigatorRoot);
 			navigatorRoot = null;
 		}
 		
 		if (propertiesViewerRoot != null) {
-			leftSplitPane.getItems().remove(propertiesViewerRoot);
+			leftPane.getItems().remove(propertiesViewerRoot);
 			propertiesViewerRoot = null;
 		}
 		
@@ -162,7 +133,7 @@ public class MetadataPerspective implements Perspective {
 		AnchorPane.setBottomAnchor(navigatorRoot, 0.0);
 		AnchorPane.setLeftAnchor(navigatorRoot, 0.0);
 		AnchorPane.setRightAnchor(navigatorRoot, 0.0);
-		leftSplitPane.getItems().add(navigatorRoot);
+		leftPane.getItems().add(navigatorRoot);
 		
 		// Properties pane
 		propertiesViewerRoot = modeController.getPropertiesViewerRoot();
@@ -173,7 +144,7 @@ public class MetadataPerspective implements Perspective {
 		AnchorPane.setBottomAnchor(propertiesViewerRoot, 0.0);
 		AnchorPane.setLeftAnchor(propertiesViewerRoot, 0.0);
 		AnchorPane.setRightAnchor(propertiesViewerRoot, 0.0);
-		leftSplitPane.getItems().add(propertiesViewerRoot);
+		leftPane.getItems().add(propertiesViewerRoot);
 		
 		// Editor pane
 		editorRoot = modeController.getEditorRoot();

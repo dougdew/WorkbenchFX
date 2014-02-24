@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -19,12 +18,12 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.TreeItem;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
 
 import com.sforce.soap.enterprise.GetUserInfoResult;
 import com.sforce.soap.metadata.AsyncRequestState;
@@ -46,6 +45,7 @@ import workbenchfx.Main;
 import workbenchfx.SOAPLogHandler;
 import workbenchfx.editor.metadata.Editor;
 import workbenchfx.editor.metadata.EditorFactory;
+import workbenchfx.editor.metadata.PackageEditor;
 
 public class RetrieveEditorController {
 	
@@ -332,17 +332,18 @@ public class RetrieveEditorController {
 	
 	private Map<String, FileController> fileControllersByName = new HashMap<String, FileController>();
 	private int newFileCounter = 1;
-	
 	private Map<Tab, FileController> fileControllersByTab = new HashMap<Tab, FileController>();
 	
-	private Map<String, RetrieveWorkerResults> retrieves = new HashMap<String, RetrieveWorkerResults>();
+	private Map<String, Map<String, String>> retrievedFiles = new HashMap<>();
 	
 	private AnchorPane root;
+	private BorderPane toolBarPane;
 	private ToolBar toolBar;
 	private Button newButton;
 	private Button retrieveButton;
 	private Button cancelButton;
 	private TabPane tabPane;
+	private Node editorToolBar;
 	
 	public RetrieveEditorController(RetrieveMode mode) {
 		this.mode = mode;
@@ -355,6 +356,10 @@ public class RetrieveEditorController {
 		return root;
 	}
 	
+	public Map<String, Map<String, String>> getRetrievedFiles() {
+		return retrievedFiles;
+	}
+	
 	public void show(String retrieveName, String fileName) {
 		
 		String qualifiedName = createQualifiedName(retrieveName, fileName);
@@ -364,13 +369,12 @@ public class RetrieveEditorController {
 			return;
 		}
 		
-		RetrieveWorkerResults workerResults = retrieves.get(retrieveName);
-		if (workerResults == null) {
+		Map<String, String> filesForRetrieveName = retrievedFiles.get(retrieveName);
+		if (filesForRetrieveName == null) {
 			return;
 		}
 		
-		Map<String, String> files = workerResults.getFiles();
-		String file = files.get(fileName);
+		String file = filesForRetrieveName.get(fileName);
 		if (file == null) {
 			return;
 		}
@@ -382,18 +386,23 @@ public class RetrieveEditorController {
 		
 		Tab tab = new Tab();
 		tab.setText(fileName);
-		tab.setOnSelectionChanged(e -> setDisablesForTabSelection());
 		tab.setOnClosed(e -> {
 			fileControllersByName.remove(qualifiedName);
 			fileControllersByTab.remove(tab);
-			setDisablesForTabSelection();
+			handleTabSelection();
 		});
 		fileController.setTab(tab);
 		
-		final Editor editor = EditorFactory.createEditor(null);
+		Editor editor;
+		if (fileName.endsWith(PackageEditor.getManifestName())) {
+			editor = EditorFactory.createEditor(PackageEditor.getType(), mode.getPerspective().getApplication());
+		}
+		else {
+			// Default text editor
+			editor = EditorFactory.createEditor(null, mode.getPerspective().getApplication());
+		}
 		editor.setMetadataAsXml(file);
 		editor.setEditable(false);
-		// TODO Disable editing
 		tab.setContent(editor.getRoot());
 		fileController.setEditor(editor);
 		
@@ -402,8 +411,6 @@ public class RetrieveEditorController {
 		
 		tabPane.getTabs().add(tab);
 		tabPane.getSelectionModel().select(tab);
-		
-		setDisablesForTabSelection();
 	}
 	
 	public void close(String retrieveName, String fileName) {	
@@ -419,7 +426,7 @@ public class RetrieveEditorController {
 		fileControllersByName.remove(qualifiedName);
 		fileControllersByTab.remove(fileController.getTab());
 		
-		setDisablesForTabSelection();
+		handleTabSelection();
 		
 		// TODO: Special handling for zero remaining file controllers and tabs
 	}
@@ -429,7 +436,7 @@ public class RetrieveEditorController {
 		fileControllersByName.clear();
 		fileControllersByTab.clear();
 		
-		setDisablesForTabSelection();
+		handleTabSelection();
 		
 		// TODO: Special handling for zero remaining file controllers and tabs
 	}
@@ -438,17 +445,18 @@ public class RetrieveEditorController {
 		
 		root = new AnchorPane();
 		
+		toolBarPane = new BorderPane();
+		AnchorPane.setTopAnchor(toolBarPane, 0.0);
+		AnchorPane.setLeftAnchor(toolBarPane, 0.0);
+		AnchorPane.setRightAnchor(toolBarPane, 0.0);
+		root.getChildren().add(toolBarPane);
+		
 		toolBar = new ToolBar();
-		AnchorPane.setTopAnchor(toolBar, 0.0);
-		AnchorPane.setLeftAnchor(toolBar, 0.0);
-		AnchorPane.setRightAnchor(toolBar, 0.0);
-		root.getChildren().add(toolBar);
+		toolBarPane.setCenter(toolBar);
 		
 		newButton = new Button("New");
 		newButton.setOnAction(e -> handleNewButtonClicked(e));
 		toolBar.getItems().add(newButton);
-		
-		toolBar.getItems().add(new Separator());
 		
 		retrieveButton = new Button("Retrieve");
 		retrieveButton.setDisable(true);
@@ -462,6 +470,7 @@ public class RetrieveEditorController {
 		
 		tabPane = new TabPane();
 		tabPane.setSide(Side.BOTTOM);
+		tabPane.getSelectionModel().selectedItemProperty().addListener(e -> handleTabSelection());
 		AnchorPane.setTopAnchor(tabPane, 38.0);
 		AnchorPane.setBottomAnchor(tabPane, 0.0);
 		AnchorPane.setLeftAnchor(tabPane, 0.0);
@@ -490,16 +499,15 @@ public class RetrieveEditorController {
 		
 		Tab tab = new Tab();
 		tab.setText(newFileName);
-		tab.setOnSelectionChanged(es -> setDisablesForTabSelection());
 		tab.setOnClosed(ec -> {
 			fileControllersByName.remove(qualifiedName);
 			fileControllersByTab.remove(tab);
-			setDisablesForTabSelection();
+			handleTabSelection();
 		});
 		fileController.setTab(tab);
 		
-		// This should be creating an editor for package manifests
-		final Editor editor = EditorFactory.createEditor(null);
+		final Editor editor = EditorFactory.createEditor(PackageEditor.getType(), mode.getPerspective().getApplication());
+		editor.setEditable(true);
 		editor.dirty().addListener((o, oldValue, newValue) -> setDisablesForTabSelection());
 		tab.setContent(editor.getRoot());
 		fileController.setEditor(editor);
@@ -509,8 +517,6 @@ public class RetrieveEditorController {
 		
 		tabPane.getTabs().add(tab);
 		tabPane.getSelectionModel().select(tab);
-		
-		setDisablesForTabSelection();
 	}
 	
 	private void handleRetrieveButtonClicked(ActionEvent e) {
@@ -549,13 +555,14 @@ public class RetrieveEditorController {
 				tab.setOnClosed(ec -> {
 					fileControllersByName.remove(newQualifiedName);
 					fileControllersByTab.remove(tab);
-					setDisablesForTabSelection();
+					handleTabSelection();
 				});
 			}
 			
-			retrieves.put(retrieveName, retrieveWorker.getValue());
+			retrievedFiles.put(retrieveName, retrieveWorker.getValue().getFiles());
 			mode.getNavigatorController().addRetrieve(retrieveName, retrieveWorker.getValue().getFileProperties(), retrieveWorker.getValue().getFileNames());
 			
+			editor.dirty().set(false);
 			editor.unlock();
 			setDisablesForOperationCompletion();
 		});
@@ -573,8 +580,14 @@ public class RetrieveEditorController {
 		
 	}
 	
+	private void handleTabSelection() {
+		setToolBarForTabSelection();
+		setDisablesForTabSelection();
+	}
+	
 	private void setDisablesForTabSelection() {
 		
+		// TODO Move all retrieve button stuff to package editor
 		if (tabPane.getTabs().size() == 0) {
 			retrieveButton.setDisable(true);
 		}
@@ -584,24 +597,38 @@ public class RetrieveEditorController {
 			Tab tab = tabPane.getSelectionModel().getSelectedItem();
 			FileController fileController = fileControllersByTab.get(tab);
 			Editor editor = fileController.getEditor();
-			if (fileController.isNew()) {
-				if (editor.dirty().get() && connected) {
-					retrieveButton.setDisable(false);
-				}
-				else {
-					retrieveButton.setDisable(true);
-				}
-				// TODO
+			if (connected && (editor instanceof PackageEditor) && editor.isEditable() && editor.dirty().get()) {
+				retrieveButton.setDisable(false);
 			}
 			else {
-				if (editor.dirty().get() && connected) {
-					retrieveButton.setDisable(false);
-				}
-				else {
-					retrieveButton.setDisable(true);
-				}
-				// TODO
+				retrieveButton.setDisable(true);
 			}
+		}
+	}
+	
+	private void setToolBarForTabSelection() {
+		
+		if (tabPane.getTabs().size() == 0) {
+			toolBarPane.setLeft(null);
+			toolBarPane.setCenter(toolBar);
+			return;
+		}
+		
+		toolBarPane.setCenter(null);
+		editorToolBar = null;
+		
+		Tab tab = tabPane.getSelectionModel().getSelectedItem();
+		FileController fileController = fileControllersByTab.get(tab);
+		Editor editor = fileController.getEditor();
+		
+		editorToolBar = editor.getToolBarRoot();
+		if (editorToolBar != null) {
+			toolBarPane.setLeft(toolBar);
+			toolBarPane.setCenter(editorToolBar);
+		}
+		else {
+			toolBarPane.setLeft(null);
+			toolBarPane.setCenter(toolBar);
 		}
 	}
 	
