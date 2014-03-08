@@ -21,6 +21,7 @@ import com.sforce.soap.enterprise.GetUserInfoResult;
 import com.sforce.soap.metadata.Metadata;
 import com.sforce.soap.metadata.MetadataConnection;
 import com.sforce.soap.metadata.SaveResult;
+import com.sforce.soap.metadata.UpsertResult;
 import com.sforce.ws.ConnectionException;
 import com.sforce.ws.bind.TypeInfo;
 import com.sforce.ws.bind.TypeMapper;
@@ -228,6 +229,62 @@ public class CRUDEditorController {
 		}
 	}
 	
+	private static class UpsertWorkerResults {
+		
+		private SOAPLogHandler logHandler;
+		boolean success;
+		
+		public void setLogHandler(SOAPLogHandler logHandler) {
+			this.logHandler = logHandler;
+		}
+		public SOAPLogHandler getLogHandler() {
+			return logHandler;
+		}
+		
+		public void setSuccess(boolean success) {
+			this.success = success;
+		}
+		public boolean getSuccess() {
+			return success;
+		}
+	}
+	
+	private static class UpsertWorker extends Task<UpsertWorkerResults> {
+		
+		private MetadataConnection connection;
+		private Metadata metadata;
+		
+		public UpsertWorker(MetadataConnection connection, Metadata metadata) {
+			this.connection = connection;
+			this.metadata = metadata;
+		}
+		
+		@Override
+		protected UpsertWorkerResults call() throws Exception {
+			
+			UpsertWorkerResults results = new UpsertWorkerResults();
+			
+			try {
+				SOAPLogHandler logHandler = new SOAPLogHandler();
+				logHandler.setTitle("Upsert");
+				logHandler.setSummary(String.format("Type: %s, Full Name: %s", metadata.getClass().getSimpleName(), metadata.getFullName()));
+				connection.getConfig().addMessageHandler(logHandler);
+				results.setLogHandler(logHandler);
+				
+				 UpsertResult[] mdapiUpsert = connection.upsertMetadata(new Metadata[]{metadata});
+				 if (mdapiUpsert != null && mdapiUpsert.length == 1) {
+				 	results.setSuccess(mdapiUpsert[0].isSuccess());
+				 }
+				connection.getConfig().clearMessageHandlers();
+			}
+			catch (ConnectionException e) {
+				e.printStackTrace();
+			}
+			
+			return results;
+		}
+	}
+	
 	private static class FileController {
 		
 		private String type;
@@ -293,6 +350,7 @@ public class CRUDEditorController {
 	private Button newButton;
 	private Button createButton;
 	private Button updateButton;
+	private Button upsertButton;
 	private Button cancelButton;
 	private TabPane tabPane;
 	
@@ -417,6 +475,11 @@ public class CRUDEditorController {
 		updateButton.setOnAction(e -> handleUpdateButtonClicked(e));
 		toolBar.getItems().add(updateButton);
 		
+		upsertButton = new Button("Upsert");
+		upsertButton.setDisable(true);
+		upsertButton.setOnAction(e -> handleUpsertButtonClicked(e));
+		toolBar.getItems().add(upsertButton);
+		
 		cancelButton = new Button("Cancel");
 		cancelButton.setDisable(true);
 		cancelButton.setOnAction(e -> handleCancelButtonClicked(e));
@@ -480,6 +543,7 @@ public class CRUDEditorController {
 		
 		createButton.setDisable(true);
 		updateButton.setDisable(true);
+		upsertButton.setDisable(true);
 		
 		Tab tab = tabPane.getSelectionModel().getSelectedItem();
 		FileController fileController = fileControllersByTab.get(tab);
@@ -531,6 +595,7 @@ public class CRUDEditorController {
 		
 		createButton.setDisable(true);
 		updateButton.setDisable(true);
+		upsertButton.setDisable(true);
 		
 		Tab tab = tabPane.getSelectionModel().getSelectedItem();
 		FileController fileController = fileControllersByTab.get(tab);
@@ -564,6 +629,44 @@ public class CRUDEditorController {
 		new Thread(updateWorker).start();
 	}
 	
+	private void handleUpsertButtonClicked(ActionEvent e) {
+		
+		if (mode.getPerspective().getApplication().metadataConnection().get() == null) {
+			return;
+		}
+		
+		createButton.setDisable(true);
+		updateButton.setDisable(true);
+		upsertButton.setDisable(true);
+		
+		Tab tab = tabPane.getSelectionModel().getSelectedItem();
+		FileController fileController = fileControllersByTab.get(tab);
+		Editor editor = fileController.getEditor();
+		
+		editor.lock();
+		Metadata m = editor.getMetadata();
+		
+		final UpsertWorker upsertWorker = new UpsertWorker(mode.getPerspective().getApplication().metadataConnection().get(), m);
+		upsertWorker.setOnSucceeded(es -> {
+			mode.getPerspective().getLogController().log(upsertWorker.getValue().getLogHandler());
+			cancelButton.setDisable(true);
+			boolean upserted = upsertWorker.getValue().getSuccess();
+			if (upserted) {
+				editor.dirty().set(false);
+			}
+			editor.unlock();
+			setDisablesForOperationCompletion();
+		});
+		
+		cancelButton.setOnAction(ec -> {
+			upsertWorker.cancel();
+			handleCancelButtonClicked(ec);
+		});
+		cancelButton.setDisable(false);
+		
+		new Thread(upsertWorker).start();
+	}
+	
 	private void handleCancelButtonClicked(ActionEvent e) {
 		
 		cancelButton.setOnAction(null);
@@ -576,8 +679,9 @@ public class CRUDEditorController {
 	private void setDisablesForTabSelection() {
 		
 		if (tabPane.getTabs().size() == 0) {
-			updateButton.setDisable(true);
 			createButton.setDisable(true);
+			updateButton.setDisable(true);
+			upsertButton.setDisable(true);
 		}
 		else {
 			boolean connected = mode.getPerspective().getApplication().metadataConnection().get() != null;
@@ -588,18 +692,22 @@ public class CRUDEditorController {
 			if (fileController.isNew()) {
 				if (editor.dirty().get() && connected) {
 					createButton.setDisable(false);
+					upsertButton.setDisable(false);
 				}
 				else {
 					createButton.setDisable(true);
+					upsertButton.setDisable(true);
 				}
 				updateButton.setDisable(true);
 			}
 			else {
 				if (editor.dirty().get() && connected) {
 					updateButton.setDisable(false);
+					upsertButton.setDisable(false);
 				}
 				else {
 					updateButton.setDisable(true);
+					upsertButton.setDisable(true);
 				}
 				createButton.setDisable(true);
 			}
