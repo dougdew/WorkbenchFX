@@ -176,7 +176,7 @@ public class CRUDEditorController {
 	private static class UpdateWorkerResults {
 		
 		private SOAPLogHandler logHandler;
-		boolean success;
+		private boolean success;
 		
 		public void setLogHandler(SOAPLogHandler logHandler) {
 			this.logHandler = logHandler;
@@ -232,13 +232,22 @@ public class CRUDEditorController {
 	private static class UpsertWorkerResults {
 		
 		private SOAPLogHandler logHandler;
-		boolean success;
+		private Metadata metadata;
+		private boolean success;
 		
 		public void setLogHandler(SOAPLogHandler logHandler) {
 			this.logHandler = logHandler;
 		}
 		public SOAPLogHandler getLogHandler() {
 			return logHandler;
+		}
+		
+		public Metadata getMetadata() {
+			return metadata;
+		}
+		
+		public void setMetadata(Metadata metadata) {
+			this.metadata = metadata;
 		}
 		
 		public void setSuccess(boolean success) {
@@ -270,6 +279,8 @@ public class CRUDEditorController {
 				logHandler.setSummary(String.format("Type: %s, Full Name: %s", metadata.getClass().getSimpleName(), metadata.getFullName()));
 				connection.getConfig().addMessageHandler(logHandler);
 				results.setLogHandler(logHandler);
+				
+				results.setMetadata(metadata);
 				
 				 UpsertResult[] mdapiUpsert = connection.upsertMetadata(new Metadata[]{metadata});
 				 if (mdapiUpsert != null && mdapiUpsert.length == 1) {
@@ -652,7 +663,19 @@ public class CRUDEditorController {
 			cancelButton.setDisable(true);
 			boolean upserted = upsertWorker.getValue().getSuccess();
 			if (upserted) {
+				fileControllersByName.remove(fileController.getFullName());
+				Metadata metadata = upsertWorker.getValue().getMetadata();
+				String fullName = metadata.getFullName();
+				fileControllersByName.put(fullName, fileController);
+				fileController.setNew(false);
+				editor.setMetadata(metadata);
 				editor.dirty().set(false);
+				tab.setText(fullName);
+				tab.setOnClosed(ec -> {
+					fileControllersByName.remove(fullName);
+					fileControllersByTab.remove(tab);
+					handleTabSelection();
+				});
 			}
 			editor.unlock();
 			setDisablesForOperationCompletion();

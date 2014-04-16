@@ -134,7 +134,7 @@ public class LoginController {
 	}
 	
 	private static final String[] VERSIONS = {
-		"31.0"
+		"32.0"
 	};
 	
 	private Main application;

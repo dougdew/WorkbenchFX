@@ -54,7 +54,6 @@ public class RetrieveEditorController {
 		
 		private SOAPLogHandler logHandler;
 		private Package pkg;
-		private AsyncResult asyncResult;
 		private RetrieveResult retrieveResult;
 		private Map<String, SortedMap<String, FileProperties>> fileProperties;
 		private TreeItem<String> fileNames;
@@ -72,13 +71,6 @@ public class RetrieveEditorController {
 		}
 		public Package getPackage() {
 			return pkg;
-		}
-		
-		public void setAsyncResult(AsyncResult asyncResult) {
-			this.asyncResult = asyncResult;
-		}
-		public AsyncResult getAsyncResult() {
-			return asyncResult;
 		}
 
 		public void setRetrieveResult(RetrieveResult retrieveResult) {
@@ -158,12 +150,11 @@ public class RetrieveEditorController {
 				// to the user.
 				String requestLog = logHandler.getRequest();
 				
-				asyncResult = waitForCompletionOfRetrieve(asyncResult);
-				workerResults.setAsyncResult(asyncResult);
+				RetrieveResult retrieveResult = waitForCompletionOfRetrieve(asyncResult.getId());
 				
-				if (asyncResult.getState() == AsyncRequestState.Completed) {
+				if (retrieveResult.isSuccess()) {
 					
-					RetrieveResult retrieveResult = connection.checkRetrieveStatus(asyncResult.getId());
+					//RetrieveResult retrieveResult = connection.checkRetrieveStatus(asyncResult.getId());
 					workerResults.setRetrieveResult(retrieveResult);
 					
 					// Set the retrieve request log xml. This is the xml that we want to provide
@@ -180,11 +171,14 @@ public class RetrieveEditorController {
 					Map<String, String> filesMap = createFilesMap(retrieveResult.getZipFile());
 					workerResults.setFiles(filesMap);
 				}
+				else {
+					// TODO: Need to make the worker fail
+				}
 				
 				connection.getConfig().clearMessageHandlers();
 			}
 			catch (ConnectionException e) {
-				
+				e.printStackTrace();
 			}
 			
 			return workerResults;
@@ -209,6 +203,7 @@ public class RetrieveEditorController {
 			return (Package)mapper.readObject(xin, typeInfo, Package.class);
 		}
 		
+		/*
 		private AsyncResult waitForCompletionOfRetrieve(AsyncResult asyncResult) throws ConnectionException, InterruptedException {
 			
 			int poll = 0;
@@ -225,6 +220,25 @@ public class RetrieveEditorController {
 			}
 			
 			return asyncResult;
+		}*/
+		
+		private RetrieveResult waitForCompletionOfRetrieve(String id) throws ConnectionException, InterruptedException {
+			
+			int poll = 0;
+			long waitTimeMilliSecs = 1000;
+			RetrieveResult retrieveResult = connection.checkRetrieveStatus(id);
+			while (!retrieveResult.isDone()) {
+				Thread.sleep(waitTimeMilliSecs);
+				waitTimeMilliSecs *= 2;
+				poll++;
+				if (poll > MAX_POLL_REQUESTS) {
+					// Time out
+					break;
+				}
+				retrieveResult = connection.checkRetrieveStatus(id);
+			}
+			
+			return retrieveResult;
 		}
 		
 		private Map<String, SortedMap<String, FileProperties>> createFilePropertiesMap(FileProperties[] filePropertiesList) {

@@ -96,10 +96,11 @@ public class PerspectiveController {
 		perspectiveBox.getChildren().add(mdApiButton);
 		
 		toolingApiButton = new ToggleButton(TOOLING);
-		toolingApiButton.getStyleClass().add("center-pill");
+		toolingApiButton.getStyleClass().add("right-pill");
 		toolingApiButton.setToggleGroup(perspectiveGroup);
 		perspectiveBox.getChildren().add(toolingApiButton);
 		
+		/*
 		dataApiButton = new ToggleButton(DATA);
 		dataApiButton.getStyleClass().add("center-pill");
 		dataApiButton.setToggleGroup(perspectiveGroup);
@@ -109,6 +110,7 @@ public class PerspectiveController {
 		connectApiButton.getStyleClass().add("right-pill");
 		connectApiButton.setToggleGroup(perspectiveGroup);
 		perspectiveBox.getChildren().add(connectApiButton);
+		*/
 		
 		perspectiveGroup.selectToggle(mdApiButton);
 		perspectiveGroup.selectedToggleProperty().addListener(e -> handlePerspectiveToggleChanged());
